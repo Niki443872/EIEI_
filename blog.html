@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EIEI Blog & News</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <!-- Firebase SDKs for public read of posts -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="components/firebase-init.js"></script>
+</head>
+<body>
+  <!-- HEADER CONTAINER -->
+  <div id="header-container"></div>
+
+  <section class="section light">
+    <h2>Latest News & Updates</h2>
+    <p style="text-align:center;color:var(--text-muted);max-width:800px;margin:0 auto 2rem;">Stories, announcements, and insights from EIEI.</p>
+    <div class="cards" id="blogCards">
+      <p style="grid-column:1/-1;text-align:center;color:var(--text-muted);">Loading posts...</p>
+    </div>
+  </section>
+
+  <!-- FOOTER CONTAINER -->
+  <div id="footer-container"></div>
+
+  <script src="components/header.js"></script>
+  <script src="components/footer.js"></script>
+  <script src="components/loader.js"></script>
+  <script src="script.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', loadComponents);
+
+    async function loadPosts() {
+      const container = document.getElementById('blogCards');
+      container.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--text-muted);">Loading posts...</p>';
+      if (!window.firebaseDB) {
+        container.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--text-muted);">Firebase is not initialized. Please check your Firebase config in components/firebase-init.js.</p>';
+        return;
+      }
+      try {
+        let snap;
+        try {
+          snap = await window.firebaseDB.collection('posts').orderBy('createdAt', 'desc').get();
+        } catch (orderErr) {
+          console.warn('Order by createdAt failed, falling back:', orderErr);
+          snap = await window.firebaseDB.collection('posts').get();
+        }
+        let posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        posts = posts.sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
+        console.log('Loaded posts:', posts.length);
+        renderPosts(posts);
+      } catch (e) {
+        console.error('Blog load error:', e);
+        container.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--text-muted);">Unable to load posts. Check Firestore rules (public read) and your Firebase config.</p>';
+      }
+    }
+
+    function renderPosts(posts) {
+      const container = document.getElementById('blogCards');
+      container.innerHTML = '';
+      if (!posts.length) {
+        container.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--text-muted);">No posts yet. Check back soon!</p>';
+        return;
+      }
+      posts.forEach(post => {
+        let img = post.imageUrl || 'images/service1.svg';
+        if (img && img.includes('thumbnail') && img.includes('=s')) {
+          img = img.replace(/=s\d+/, '=s600');
+        }
+        const excerpt = post.excerpt || (post.content ? post.content.slice(0, 140) + '…' : '');
+        const card = document.createElement('div');
+        card.className = 'card reveal visible';
+        card.innerHTML = `
+          <img src="${img}" alt="${post.title}" class="card-image" loading="lazy">
+          <h3>${post.title}</h3>
+          <p>${escapeHtml(excerpt)}</p>
+          <button class="primary-btn" onclick="openPostModal('${post.id}')">Read More</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+    function toMillis(value) {
+      if (!value) return 0;
+      try {
+        if (typeof value.toMillis === 'function') return value.toMillis();
+        if (typeof value.toDate === 'function') return value.toDate().getTime();
+        if (value instanceof Date) return value.getTime();
+        const d = new Date(value);
+        const t = d.getTime();
+        return isNaN(t) ? 0 : t;
+      } catch (_) {
+        return 0;
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>\"]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[s]));
+    }
+
+    // Simple modal for full post view
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="postModalTitle">Post</h2>
+          <button class="close-btn" onclick="closePostModal()">×</button>
+        </div>
+        <div id="postModalBody" style="white-space:pre-wrap;line-height:1.6"></div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    async function openPostModal(id) {
+      try {
+        const doc = await window.firebaseDB.collection('posts').doc(id).get();
+        const post = doc.data();
+        document.getElementById('postModalTitle').textContent = post.title || 'Post';
+        document.getElementById('postModalBody').textContent = post.content || '';
+        modal.classList.add('active');
+      } catch (e) {
+        alert('Unable to load post');
+      }
+    }
+
+    function closePostModal() { modal.classList.remove('active'); }
+
+    document.addEventListener('DOMContentLoaded', loadPosts);
+  </script>
+</body>
+</html>

@@ -1,0 +1,2277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EIEI Admin - Programs Management</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="components/firebase-init.js"></script>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://accounts.google.com/gsi/client"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    .admin-container {
+      min-height: 100vh;
+      background: var(--bg);
+      padding-top: 80px;
+    }
+
+    .admin-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 3rem;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 1rem;
+    }
+
+    .admin-header h1 {
+      color: var(--brand-blue);
+      font-size: 2rem;
+    }
+
+    .admin-tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .admin-tab {
+      padding: 0.75rem 1.5rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      color: var(--text-muted);
+      transition: all 0.3s ease;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+    }
+
+    .admin-tab.active {
+      color: var(--brand-blue);
+      border-bottom-color: var(--brand-blue);
+    }
+
+    .logout-btn {
+      background: var(--brand-orange);
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: opacity 0.3s ease;
+    }
+
+    .logout-btn:hover {
+      opacity: 0.9;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .upload-section {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+
+    .upload-section h2 {
+      color: var(--brand-blue);
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      padding: 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 1rem;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    .programs-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .program-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      position: relative;
+    }
+
+    .program-card h3 {
+      color: var(--brand-blue);
+      margin-bottom: 0.5rem;
+    }
+
+    .program-card p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    .program-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .program-actions button {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+    }
+
+    .edit-btn {
+      background: var(--brand-blue);
+      color: white;
+    }
+
+    .edit-btn:hover {
+      opacity: 0.8;
+    }
+
+    .delete-btn {
+      background: #dc2626;
+      color: white;
+    }
+
+    .delete-btn:hover {
+      opacity: 0.8;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-header h2 {
+      color: var(--brand-blue);
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .success-message {
+      background: #d1fae5;
+      color: #065f46;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      display: none;
+    }
+
+    .success-message.show {
+      display: block;
+      animation: slideDown 0.3s ease;
+    }
+
+    .error-message {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .primary-btn {
+      background: var(--brand-blue);
+      color: white;
+      border: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: opacity 0.3s ease;
+    }
+
+    .primary-btn:hover {
+      opacity: 0.9;
+    }
+
+    .secondary-btn {
+      background: var(--bg-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .secondary-btn:hover {
+      background: var(--border);
+    }
+
+    .button-group {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .button-group button {
+      flex: 1;
+    }
+
+    .list-item {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.5rem 0;
+    }
+
+    .list-item input {
+      flex: 1;
+    }
+
+    .list-item button {
+      background: #dc2626;
+      color: white;
+      border: none;
+      padding: 0.4rem 0.8rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .add-list-btn {
+      background: var(--brand-blue);
+      color: white;
+      border: none;
+      padding: 0.6rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <header class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="logo-link">
+        <img src="images/logo.png" alt="EIEI Logo" class="logo">
+      </a>
+      <button class="menu-toggle" id="menuToggle">☰</button>
+    </div>
+  </header>
+
+  <!-- ADMIN CONTENT -->
+  <div class="admin-container">
+    <div class="admin-content">
+      <div class="admin-header">
+        <h1>Admin Portal - Programs Management</h1>
+        <div id="authContainer"></div>
+      </div>
+
+      <div id="adminPanel" style="display: none;">
+        <div class="admin-tabs">
+          <button class="admin-tab active" onclick="switchTab('programs')">Programs</button>
+          <button class="admin-tab" onclick="switchTab('gallery')">Gallery Images</button>
+          <button class="admin-tab" onclick="switchTab('team')">Team</button>
+          <button class="admin-tab" onclick="switchTab('blog')">Blog</button>
+          <button class="admin-tab" onclick="switchTab('marketplace')">Marketplace</button>
+          <button class="admin-tab" onclick="switchTab('newsletter')">Newsletter</button>
+          <button class="admin-tab" onclick="switchTab('enquiries')">Enquiries</button>
+          <button class="admin-tab" onclick="switchTab('contacts')">Contacts</button>
+          <button class="admin-tab" onclick="switchTab('roles')" id="rolesTabBtn" style="display:none;">Roles</button>
+        </div>
+
+        <!-- PROGRAMS TAB -->
+        <div id="programs" class="tab-content active">
+          <div class="upload-section">
+            <h2>Program Management</h2>
+            <button class="primary-btn" onclick="openAddProgramModal()" style="margin-bottom: 2rem;">+ Add New Program</button>
+            
+            <div class="success-message" id="successMessage"></div>
+            <div class="error-message" id="errorMessage"></div>
+
+            <div id="programsList" class="programs-list">
+              <p style="grid-column: 1/-1; color: var(--text-muted);">Loading programs...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- GALLERY TAB -->
+        <div id="gallery" class="tab-content">
+          <div class="upload-section">
+            <h2>Upload Gallery Images to Google Drive</h2>
+            <div class="success-message" id="gallerySuccessMessage">✓ Image uploaded successfully!</div>
+
+            <form class="upload-form" id="uploadForm">
+              <div class="form-group">
+                <label for="imageInput">Select Images (PNG, JPG, GIF)</label>
+                <input 
+                  type="file" 
+                  id="imageInput" 
+                  accept="image/*" 
+                  multiple
+                />
+              </div>
+              <button type="submit" class="primary-btn" id="uploadBtn">Upload Images</button>
+              <div id="uploadProgress" style="display: none; margin-top: 1rem; color: var(--text-muted);">
+                Uploading: <span id="progressText">0</span>%
+              </div>
+            </form>
+
+            <div class="image-count" id="imageCount">Loading images...</div>
+
+            <h3 style="margin-top: 2rem; color: var(--brand-blue);">Images in Google Drive Folder</h3>
+            <div class="gallery-preview" id="galleryPreview"></div>
+          </div>
+        </div>
+
+        <!-- TEAM TAB -->
+        <div id="team" class="tab-content">
+          <div class="upload-section">
+            <h2>Team Member Management</h2>
+            <button class="primary-btn" onclick="openAddTeamModal()" style="margin-bottom: 2rem;">+ Add New Team Member</button>
+            <div class="success-message" id="teamSuccessMessage"></div>
+            <div class="error-message" id="teamErrorMessage"></div>
+            <div id="teamList" class="programs-list">
+              <p style="grid-column: 1/-1; color: var(--text-muted);">Loading team members...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- BLOG TAB -->
+        <div id="blog" class="tab-content">
+          <div class="upload-section">
+            <h2>Blog & News Management</h2>
+            <button class="primary-btn" onclick="openAddBlogModal()" style="margin-bottom: 2rem;">+ Write New Post</button>
+            <div class="success-message" id="blogSuccessMessage"></div>
+            <div class="error-message" id="blogErrorMessage"></div>
+            <div id="blogList" class="programs-list">
+              <p style="grid-column: 1/-1; color: var(--text-muted);">Loading posts...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- MARKETPLACE TAB -->
+        <div id="marketplace" class="tab-content">
+          <div class="upload-section">
+            <h2>Marketplace Item Management</h2>
+            <button class="primary-btn" onclick="openAddMarketplaceItemModal()" style="margin-bottom: 2rem;">+ Add New Item</button>
+            <div class="success-message" id="marketplaceSuccessMessage"></div>
+            <div class="error-message" id="marketplaceErrorMessage"></div>
+            <div id="marketplaceItemsList" class="programs-list">
+              <p style="grid-column: 1/-1; color: var(--text-muted);">Loading marketplace items...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- NEWSLETTER TAB -->
+        <div id="newsletter" class="tab-content">
+          <div class="upload-section">
+            <h2>Newsletter Subscribers</h2>
+            <div class="button-group">
+              <button class="secondary-btn" onclick="loadNewsletterSubs()">Refresh</button>
+              <button class="primary-btn" onclick="exportNewsletterCSV()">Export CSV</button>
+              <button class="primary-btn" onclick="exportNewsletterXLSX()">Export Excel (.xlsx)</button>
+            </div>
+            <div id="newsletterList" class="programs-list" style="grid-template-columns: 1fr;">
+              <p style="grid-column:1/-1;color:var(--text-muted);">Loading subscribers...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ENQUIRIES TAB -->
+        <div id="enquiries" class="tab-content">
+          <div class="upload-section">
+            <h2>Enquiries</h2>
+            <div class="button-group">
+              <button class="secondary-btn" onclick="loadEnquiries()">Refresh</button>
+              <button class="primary-btn" onclick="exportEnquiriesCSV()">Export CSV</button>
+              <button class="primary-btn" onclick="exportEnquiriesXLSX()">Export Excel (.xlsx)</button>
+            </div>
+            <div style="overflow:auto;">
+              <table class="data-table" id="enquiriesTable" style="width:100%; border-collapse: collapse;">
+                <thead>
+                  <tr>
+                    <th style="text-align:left;border-bottom:1px solid var(--border);padding:8px;">Name</th>
+                    <th style="text-align:left;border-bottom:1px solid var(--border);padding:8px;">Email</th>
+                    <th style="text-align:left;border-bottom:1px solid var(--border);padding:8px;">Phone</th>
+                    <th style="text-align:left;border-bottom:1px solid var(--border);padding:8px;">Address</th>
+                    <th style="text-align:left;border-bottom:1px solid var(--border);padding:8px;">Child Age</th>
+                    <th style="text-align:left;border-bottom:1px solid var(--border);padding:8px;">Message</th>
+                    <th style="text-align:left;border-bottom:1px solid var(--border);padding:8px;">Submitted</th>
+                  </tr>
+                </thead>
+                <tbody id="enquiriesBody">
+                  <tr><td colspan="7" style="color:var(--text-muted);padding:12px;">Loading enquiries...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTACTS TAB -->
+        <div id="contacts" class="tab-content">
+          <div class="upload-section">
+            <h2>Contact Messages</h2>
+            <div class="button-group">
+              <button class="secondary-btn" onclick="loadContacts()">Refresh</button>
+            </div>
+            <div style="overflow:auto;">
+              <table class="data-table" id="contactsTable" style="width:100%; border-collapse: collapse;">
+                <thead>
+                  <tr>
+                    <th style="text-align:left;border-bottom:1px solid var(--border);padding:8px;">Name</th>
+                    <th style="text-align:left;border-bottom:1px solid var(--border);padding:8px;">Email</th>
+                    <th style="text-align:left;border-bottom:1px solid var(--border);padding:8px;">Phone</th>
+                    <th style="text-align:left;border-bottom:1px solid var(--border);padding:8px;">Subject</th>
+                    <th style="text-align:left;border-bottom:1px solid var(--border);padding:8px;">Message</th>
+                    <th style="text-align:left;border-bottom:1px solid var(--border);padding:8px;">Submitted</th>
+                  </tr>
+                </thead>
+                <tbody id="contactsBody">
+                  <tr><td colspan="7" style="color:var(--text-muted);padding:12px;">Loading contacts...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ROLES TAB (Superadmin only) -->
+        <div id="roles" class="tab-content">
+          <div class="upload-section">
+            <h2>Admin Roles Management</h2>
+            <p id="rolesInfo" style="color:var(--text-muted);margin-bottom:1rem;">Manage admin users and their access.</p>
+            <div class="success-message" id="rolesSuccessMessage"></div>
+            <div class="error-message" id="rolesErrorMessage"></div>
+
+            <form id="roleForm" style="margin-bottom:1.5rem;">
+              <div class="form-group">
+                <label for="roleEmail">Admin Email *</label>
+                <input type="email" id="roleEmail" required placeholder="admin@example.com">
+              </div>
+              <div class="form-group">
+                <label>Role Type</label>
+                <select id="roleType">
+                  <option value="admin">Admin</option>
+                  <option value="superadmin">Superadmin</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="roleTempPassword">Temporary Password (min 6 chars)</label>
+                <input type="password" id="roleTempPassword" placeholder="Set an initial password">
+              </div>
+              <div class="form-group">
+                <label>Allow Access To Tabs</label>
+                <div class="programs-list" style="grid-template-columns: repeat(3, minmax(200px, 1fr));">
+                  <label><input type="checkbox" class="permCheck" value="programs"> Programs</label>
+                  <label><input type="checkbox" class="permCheck" value="gallery"> Gallery Images</label>
+                  <label><input type="checkbox" class="permCheck" value="team"> Team</label>
+                  <label><input type="checkbox" class="permCheck" value="blog"> Blog</label>
+                  <label><input type="checkbox" class="permCheck" value="marketplace"> Marketplace</label>
+                  <label><input type="checkbox" class="permCheck" value="newsletter"> Newsletter</label>
+                  <label><input type="checkbox" class="permCheck" value="enquiries"> Enquiries</label>
+                  <label><input type="checkbox" class="permCheck" value="contacts"> Contacts</label>
+                </div>
+              </div>
+              <div class="button-group">
+                <button type="submit" class="primary-btn">Save Role</button>
+                <button type="button" class="secondary-btn" onclick="document.getElementById('roleForm').reset()">Clear</button>
+              </div>
+            </form>
+
+            <div style="overflow:auto;">
+              <table class="data-table" id="rolesTable" style="width:100%; border-collapse: collapse;">
+                <thead>
+                  <tr>
+                    <th style="text-align:left;border-bottom:1px solid var(--border);padding:8px;">Email</th>
+                    <th style="text-align:left;border-bottom:1px solid var(--border);padding:8px;">Role</th>
+                    <th style="text-align:left;border-bottom:1px solid var(--border);padding:8px;">Permissions</th>
+                    <th style="text-align:left;border-bottom:1px solid var(--border);padding:8px;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="rolesBody">
+                  <tr><td colspan="4" style="color:var(--text-muted);padding:12px;">Loading roles...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="loginPrompt" style="text-align: center; padding: 2rem;">
+        <h2 style="color: var(--brand-blue); margin-bottom: 1rem;">Admin Sign In</h2>
+        <p style="color: var(--text-muted); margin-bottom: 2rem;">Use your admin email and password</p>
+        <div style="max-width:420px;margin:0 auto;text-align:left;background:var(--card-bg);padding:1.5rem;border-radius:12px;border:1px solid var(--border);">
+          <div class="form-group">
+            <label for="loginEmail">Email</label>
+            <input type="email" id="loginEmail" placeholder="admin@example.com">
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" placeholder="••••••••">
+          </div>
+          <div class="button-group">
+            <button class="primary-btn" onclick="signInEmailPassword()">Sign In</button>
+          </div>
+          <div id="loginErrorMessage" class="error-message" style="margin-top:1rem;"></div>
+          <p style="color:var(--text-muted);margin-top:1rem;">Note: Gallery uploads to Google Drive require Google OAuth. Without Google sign-in, that feature will be disabled.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD/EDIT PROGRAM MODAL -->
+  <div id="programModal" class="modal">
+      <!-- ADD/EDIT TEAM MEMBER MODAL -->
+      <div id="teamModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 id="teamModalTitle">Add New Team Member</h2>
+            <button class="close-btn" onclick="closeTeamModal()">×</button>
+          </div>
+          <form id="teamForm">
+            <div class="form-group">
+              <label for="teamName">Name *</label>
+              <input type="text" id="teamName" required>
+            </div>
+            <div class="form-group">
+              <label for="teamRole">Role *</label>
+              <input type="text" id="teamRole" required>
+            </div>
+            <div class="form-group">
+              <label for="teamImage">Image *</label>
+              <input type="file" id="teamImage" accept="image/*" required>
+            </div>
+            <div class="button-group">
+              <button type="submit" class="primary-btn">Save Member</button>
+              <button type="button" class="secondary-btn" onclick="closeTeamModal()">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">Add New Program</h2>
+        <button class="close-btn" onclick="closeProgramModal()">×</button>
+      </div>
+
+      <form id="programForm">
+        <div class="form-group">
+          <label for="programName">Program Name *</label>
+          <input type="text" id="programName" required>
+        </div>
+
+        <div class="form-group">
+          <label for="programId">Program ID (unique identifier) *</label>
+          <input type="text" id="programId" required placeholder="e.g., early-intervention">
+        </div>
+
+        <div class="form-group">
+          <label for="ageRange">Age Range</label>
+          <input type="text" id="ageRange" placeholder="e.g., Ages 3-5">
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description *</label>
+          <textarea id="description" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>What We Provide</label>
+          <div id="providesList"></div>
+          <button type="button" class="add-list-btn" onclick="addProvideItem()">+ Add Item</button>
+        </div>
+
+        <div class="form-group">
+          <label>Who Benefits</label>
+          <div id="benefitsList"></div>
+          <button type="button" class="add-list-btn" onclick="addBenefitItem()">+ Add Item</button>
+        </div>
+
+        <div class="form-group">
+          <label for="location">Location</label>
+          <input type="text" id="location" placeholder="4704 Leiper Street, Philadelphia, PA 19124">
+        </div>
+
+        <div class="form-group">
+          <label for="imageUrl">Image URL</label>
+          <input type="url" id="imageUrl" placeholder="https://example.com/image.svg">
+        </div>
+
+        <div class="button-group">
+          <button type="submit" class="primary-btn">Save Program</button>
+          <button type="button" class="secondary-btn" onclick="closeProgramModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADD/EDIT BLOG MODAL -->
+  <div id="blogModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="blogModalTitle">Write New Post</h2>
+        <button class="close-btn" onclick="closeBlogModal()">×</button>
+      </div>
+      <form id="blogForm">
+        <div class="form-group">
+          <label for="postTitle">Title *</label>
+          <input type="text" id="postTitle" required>
+        </div>
+        <div class="form-group">
+          <label for="postExcerpt">Excerpt *</label>
+          <textarea id="postExcerpt" required placeholder="Short summary shown on cards"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="postContent">Content *</label>
+          <textarea id="postContent" required style="min-height:200px" placeholder="Full post content"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="postImageUrl">Image URL</label>
+          <input type="url" id="postImageUrl" placeholder="https://example.com/image.jpg">
+        </div>
+        <div class="form-group">
+          <label for="postImageFile">Or Upload Image</label>
+          <input type="file" id="postImageFile" accept="image/*">
+        </div>
+        <div class="button-group">
+          <button type="submit" class="primary-btn">Publish</button>
+          <button type="button" class="secondary-btn" onclick="closeBlogModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADD/EDIT MARKETPLACE ITEM MODAL -->
+  <div id="marketplaceModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="marketplaceModalTitle">Add Marketplace Item</h2>
+        <button class="close-btn" onclick="closeMarketplaceModal()">×</button>
+      </div>
+      <form id="marketplaceForm">
+        <div class="form-group">
+          <label for="itemTitle">Item Title *</label>
+          <input type="text" id="itemTitle" required>
+        </div>
+        <div class="form-group">
+          <label for="itemCategory">Category *</label>
+          <select id="itemCategory" required>
+            <option value="">Select a category</option>
+            <option value="Training Materials">Training Materials</option>
+            <option value="Educational Resources">Educational Resources</option>
+            <option value="Tools & Equipment">Tools & Equipment</option>
+            <option value="Consulting Services">Consulting Services</option>
+            <option value="Publications">Publications</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="itemDescription">Description *</label>
+          <textarea id="itemDescription" required placeholder="Detailed description of the item" style="min-height:120px"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="itemPrice">Price (USD) *</label>
+          <input type="number" id="itemPrice" step="0.01" min="0" required placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label for="itemAvailability">Availability *</label>
+          <input type="text" id="itemAvailability" required placeholder="e.g., In stock, Available upon request">
+        </div>
+        <div class="form-group">
+          <label for="itemContactEmail">Contact Email *</label>
+          <input type="email" id="itemContactEmail" required placeholder="contact@example.com">
+        </div>
+        <div class="form-group">
+          <label for="itemImageUrl">Image URL</label>
+          <input type="url" id="itemImageUrl" placeholder="https://example.com/image.jpg">
+        </div>
+        <div class="form-group">
+          <label for="itemImageFile">Or Upload Image</label>
+          <input type="file" id="itemImageFile" accept="image/*">
+        </div>
+        <div class="button-group">
+          <button type="submit" class="primary-btn">Save Item</button>
+          <button type="button" class="secondary-btn" onclick="closeMarketplaceModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const CLIENT_ID = '35109919396-prtb83ncq3t7j7h4c3qg1bs6q9e8hgkl.apps.googleusercontent.com';
+    const GALLERY_FOLDER_ID = '1bjif6GZ65LnWx_X3vOnWR-xGeQHmC0N_';
+    // Set these to your Team and Blog Google Drive folder IDs
+    const TEAM_FOLDER_ID = '1XsnayWvcFrZjhmZmVCRPV2usCjlVw_8T';
+    const BLOG_FOLDER_ID = '1xnauQHF2y2ybTizLQsFqdF4IqBalEzho';
+    const MARKETPLACE_FOLDER_ID = '1bjif6GZ65LnWx_X3vOnWR-xGeQHmC0N_'; // Use same as gallery or create a new one
+    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+    let tokenClient;
+    let accessToken = null;
+    let programs = [];
+    let editingProgramId = null;
+
+    // Initialize Google Sign-In
+    function initializeGoogleSignIn() {
+      google.accounts.id.initialize({
+        client_id: CLIENT_ID,
+        callback: handleCredentialResponse
+      });
+
+      google.accounts.id.renderButton(
+        document.getElementById('googleSignInButton'),
+        { theme: 'outline', size: 'large' }
+      );
+
+      checkAuthStatus();
+    }
+
+    let currentUserEmail = null;
+    function handleCredentialResponse(response) {
+      try {
+        const payload = parseJwt(response && response.credential);
+        currentUserEmail = (payload && payload.email) ? String(payload.email).toLowerCase() : null;
+        if (currentUserEmail) localStorage.setItem('adminUserEmail', currentUserEmail);
+      } catch (e) {
+        console.warn('Unable to parse Google ID token for email:', e);
+      }
+      requestAccessToken();
+    }
+
+    function requestAccessToken() {
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: (tokenResponse) => {
+          accessToken = tokenResponse.access_token;
+          showAdminPanel();
+          setupRolesAndPermissions();
+          loadPrograms();
+          loadGalleryImages();
+        }
+      });
+
+      tokenClient.requestAccessToken({ prompt: 'consent' });
+    }
+
+    function checkAuthStatus() {
+      const savedToken = localStorage.getItem('adminAuthToken');
+      if (savedToken) {
+        accessToken = savedToken;
+        currentUserEmail = localStorage.getItem('adminUserEmail') || null;
+        showAdminPanel();
+        setupRolesAndPermissions();
+        loadPrograms();
+        loadGalleryImages();
+      }
+    }
+
+    function showAdminPanel() {
+      document.getElementById('loginPrompt').style.display = 'none';
+      document.getElementById('adminPanel').style.display = 'block';
+      const authDiv = document.getElementById('authContainer');
+      const emailText = currentUserEmail ? `Logged in as ${currentUserEmail}` : 'Logged in';
+      authDiv.innerHTML = `<span style="margin-right:1rem;color:var(--text-muted);">${emailText}</span><button class="logout-btn" onclick="logout()">Logout</button>`;
+
+      localStorage.setItem('adminAuthToken', accessToken);
+    }
+
+    function logout() {
+      accessToken = null;
+      localStorage.removeItem('adminAuthToken');
+      localStorage.removeItem('adminUserEmail');
+      firebase.auth().signOut().finally(() => location.reload());
+    }
+
+    function parseJwt(token) {
+      if (!token) return null;
+      const parts = token.split('.');
+      if (parts.length !== 3) return null;
+      const json = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+      try { return JSON.parse(json); } catch (_) { return null; }
+    }
+
+    // Roles & permissions
+    let isSuperadmin = false;
+    let allowedTabs = new Set();
+    function hasTab(tabName) {
+      return isSuperadmin || allowedTabs.has(tabName);
+    }
+    async function setupRolesAndPermissions() {
+      try {
+        // Try direct doc fetch first
+        if (currentUserEmail) {
+          const doc = await window.firebaseDB.collection('roles').doc(currentUserEmail).get();
+          if (doc.exists) {
+            const data = doc.data();
+            isSuperadmin = String(data.role || '').toLowerCase() === 'superadmin';
+            const tabsObj = data.tabs || {};
+            Object.keys(tabsObj).forEach(k => { if (tabsObj[k]) allowedTabs.add(k); });
+          }
+        }
+
+        // If not superadmin yet, check if collection is empty (bootstrap scenario)
+        if (!isSuperadmin && currentUserEmail) {
+          const rolesSnap = await window.firebaseDB.collection('roles').get();
+          if (rolesSnap.empty) {
+            isSuperadmin = true;
+          }
+        }
+
+        applyTabPermissions();
+        if (isSuperadmin) {
+          document.getElementById('rolesTabBtn').style.display = '';
+          loadRoles();
+        }
+      } catch (e) {
+        console.warn('Roles setup failed:', e);
+        // Bootstrap fallback: if we cannot read roles (likely rules), allow current user to see Roles tab
+        if (currentUserEmail) {
+          isSuperadmin = true;
+          applyTabPermissions();
+          document.getElementById('rolesTabBtn').style.display = '';
+          // loadRoles may fail under rules; UI will still allow saving roles
+        }
+      }
+    }
+
+    function applyTabPermissions() {
+      const buttons = Array.from(document.querySelectorAll('.admin-tabs .admin-tab'));
+      buttons.forEach(btn => {
+        const on = btn.getAttribute('onclick') || '';
+        const m = on.match(/switchTab\(['"]([^'"]+)['"]\)/);
+        const tabName = m ? m[1] : null;
+        if (!tabName) return;
+        if (tabName === 'roles') {
+          btn.style.display = isSuperadmin ? '' : 'none';
+          return;
+        }
+        if (isSuperadmin) {
+          btn.style.display = '';
+        } else if (allowedTabs.has(tabName)) {
+          btn.style.display = '';
+        } else {
+          btn.style.display = 'none';
+          const content = document.getElementById(tabName);
+          if (content) content.classList.remove('active');
+        }
+      });
+
+      // If the active tab was hidden, switch to the first visible one
+      const activeBtn = document.querySelector('.admin-tabs .admin-tab.active');
+      if (activeBtn && activeBtn.style.display === 'none') {
+        const firstVisible = buttons.find(b => b.style.display !== 'none');
+        if (firstVisible) {
+          const mm = firstVisible.getAttribute('onclick').match(/switchTab\(['"]([^'"]+)['"]\)/);
+          if (mm) switchTab(mm[1]);
+        }
+      }
+    }
+
+    // Roles tab logic (superadmin only)
+    let roles = [];
+    async function loadRoles() {
+      const tbody = document.getElementById('rolesBody');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-muted);padding:12px;">Loading roles...</td></tr>';
+      try {
+        const snap = await window.firebaseDB.collection('roles').get();
+        roles = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderRoles();
+      } catch (e) {
+        console.error('Roles load error:', e);
+        tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-muted);padding:12px;">Unable to load roles.</td></tr>';
+      }
+    }
+
+    function renderRoles() {
+      const tbody = document.getElementById('rolesBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      if (!roles.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-muted);padding:12px;">No roles defined yet.</td></tr>';
+        return;
+      }
+      roles.forEach(r => {
+        const tr = document.createElement('tr');
+        const pad = 'padding:8px;border-bottom:1px solid var(--border);vertical-align:top;';
+        const perms = Object.keys(r.tabs || {}).filter(k => r.tabs[k]).join(', ');
+        tr.innerHTML = `
+          <td style="${pad}">${escapeHtml(r.id)}</td>
+          <td style="${pad}">${escapeHtml(r.role || 'admin')}</td>
+          <td style="${pad}">${escapeHtml(perms)}</td>
+          <td style="${pad}">
+            <button class="delete-btn" onclick="deleteRole('${r.id}')">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('roleForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!isSuperadmin) return showRolesError('Only superadmins can manage roles.');
+      const email = String(document.getElementById('roleEmail').value).trim().toLowerCase();
+      const roleType = document.getElementById('roleType').value;
+      const tempPasswordEl = document.getElementById('roleTempPassword');
+      const tempPassword = tempPasswordEl ? String(tempPasswordEl.value) : '';
+      const checks = Array.from(document.querySelectorAll('.permCheck'));
+      const tabs = {};
+      checks.forEach(c => { tabs[c.value] = c.checked; });
+      if (!email) return showRolesError('Email is required');
+      try {
+        // Optionally create the auth user with a temporary password
+        if (tempPassword && tempPassword.length >= 6) {
+          await createAuthUser(email, tempPassword);
+        }
+        await window.firebaseDB.collection('roles').doc(email).set({ role: roleType, tabs }, { merge: true });
+        showRolesSuccess('Role saved');
+        document.getElementById('roleForm').reset();
+        loadRoles();
+        // Re-evaluate permissions if editing current user
+        if (currentUserEmail === email) {
+          allowedTabs = new Set();
+          isSuperadmin = roleType === 'superadmin';
+          Object.keys(tabs).forEach(k => { if (tabs[k]) allowedTabs.add(k); });
+          applyTabPermissions();
+        }
+      } catch (e) {
+        console.error('Save role error:', e);
+        const code = (e && e.code) ? String(e.code) : '';
+        const msg = (e && e.message) ? String(e.message) : 'Error saving role';
+        if (code === 'permission-denied') {
+          showRolesError('Permission denied. Ensure Firestore rules allow superadmin to write roles.');
+        } else {
+          showRolesError(msg);
+        }
+      }
+    });
+
+    async function createAuthUser(email, password) {
+      // Create user via a secondary Firebase app instance so current session is not affected
+      try {
+        const cfg = firebase.app().options || {};
+        const tempApp = firebase.initializeApp(cfg, 'adminCreator');
+        const tempAuth = firebase.auth(tempApp);
+        await tempAuth.createUserWithEmailAndPassword(email, password);
+        await tempAuth.signOut();
+        if (typeof tempApp.delete === 'function') tempApp.delete();
+      } catch (err) {
+        console.warn('Create auth user failed:', err);
+        // Continue; role will still be saved. Admin can self-register later if needed.
+      }
+    }
+
+    async function deleteRole(email) {
+      if (!isSuperadmin) return showRolesError('Only superadmins can manage roles.');
+      if (!confirm('Delete this role?')) return;
+      try {
+        await window.firebaseDB.collection('roles').doc(email).delete();
+        showRolesSuccess('Role deleted');
+        loadRoles();
+      } catch (e) {
+        console.error('Delete role error:', e);
+        showRolesError('Error deleting role');
+      }
+    }
+
+    function showRolesSuccess(msg) {
+      const el = document.getElementById('rolesSuccessMessage');
+      el.textContent = '✓ ' + msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 3000);
+    }
+    function showRolesError(msg) {
+      const el = document.getElementById('rolesErrorMessage');
+      el.textContent = '✗ ' + msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 3000);
+    }
+
+    // TAB SWITCHING
+    function switchTab(tabName) {
+      document.querySelectorAll('.admin-tab').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+      event.target.classList.add('active');
+      document.getElementById(tabName).classList.add('active');
+    }
+
+    // PROGRAMS MANAGEMENT
+    async function loadPrograms() {
+      try {
+        const snap = await window.firebaseDB.collection('programs').get();
+        programs = snap.docs.map(doc => doc.data());
+        if (!programs || programs.length === 0) programs = getDefaultPrograms();
+      } catch (error) {
+        console.error('Error loading programs:', error);
+        programs = getDefaultPrograms();
+      }
+      renderProgramsList();
+    }
+
+    function getDefaultPrograms() {
+      return [
+        {
+          id: 'early-intervention',
+          name: 'Early Intervention Services & Behavioral Health',
+          ageRange: 'Ages 3-5',
+          description: 'EIEI offers free to low-cost on-site special education social playgroups and classrooms tailored for children ages 3-5, supported by Certified Educators, Special Needs Instructors, Registered Behavior Technicians (RBT), and Occupational and Speech Therapy support.',
+          provides: [
+            'Free to low-cost specialized classrooms',
+            'Social playgroups with structured learning activities',
+            'Individual and small group behavioral support',
+            'Speech and language therapy',
+            'Occupational therapy services',
+            'In-home and in-school support',
+            'Family engagement and parent coaching'
+          ],
+          benefits: [
+            'Children with developmental delays',
+            'Children with autism spectrum disorder',
+            'Children with behavioral challenges',
+            'Children needing speech/language support',
+            'Children with special healthcare needs',
+            'Families seeking early support'
+          ],
+          location: '4704 Leiper Street, Philadelphia, PA 19124',
+          imageUrl: 'images/service1.svg'
+        },
+        {
+          id: 'training-development',
+          name: 'Training, Coaching, and Professional Development',
+          description: 'Empowering owners, directors, and educators to expand their knowledge of special education and its legal aspects.',
+          provides: [
+            'Special education law and regulations',
+            'Inclusive classroom practices',
+            'Behavior management strategies',
+            'Early childhood development',
+            'Trauma-informed approaches',
+            'Family engagement strategies',
+            'Cultural competency and diversity'
+          ],
+          benefits: [
+            'Child care providers',
+            'Preschool programs',
+            'School districts',
+            'Early intervention agencies'
+          ],
+          imageUrl: 'images/service2.svg'
+        },
+        {
+          id: 'community-programs',
+          name: 'Community Programs & Partnerships',
+          description: 'EIEI has proudly been awarded a 5-year grant in partnership with Pennsylvania\'s Pre-K Counts.',
+          provides: [
+            'Direct consultation and technical assistance',
+            'Staff training and professional development',
+            'Inclusive classroom implementation',
+            'Family engagement program development',
+            'Quality improvement initiatives'
+          ],
+          benefits: [
+            '20+ ECE programs',
+            'Hundreds of children served',
+            'Statewide reach'
+          ],
+          imageUrl: 'images/service3.svg'
+        },
+        {
+          id: 'family-empowerment',
+          name: 'Family Empowerment & Support',
+          description: 'Join our vibrant online community and Family Empowerment Corner Sessions where families and educators come together.',
+          provides: [
+            'Virtual support groups and community meetings',
+            'Parenting workshops and training',
+            'Self-care and wellness resources',
+            'Navigation of special education services',
+            'Advocacy training and support'
+          ],
+          benefits: [
+            'Parents and caregivers',
+            'Families with young children',
+            'Families seeking support',
+            'Those new to special education'
+          ],
+          imageUrl: 'images/service4.svg'
+        },
+        {
+          id: 'partnerships',
+          name: 'Supporting Communities & Partnerships',
+          description: 'We join hands with non-profit and for-profit partners, aligning our efforts to support their mission.',
+          provides: [
+            'Strategic partnership development',
+            'Grant writing and funding support',
+            'Program evaluation and quality improvement',
+            'Staff training and capacity building'
+          ],
+          benefits: [
+            'Non-profit organizations',
+            'For-profit child care centers',
+            'School districts'
+          ],
+          imageUrl: 'images/service5.svg'
+        },
+        {
+          id: 'cacfp',
+          name: 'CACFP Sponsorship & Administrative Support',
+          description: 'As a sponsoring organization of the Child and Adult Care Food Program (CACFP), EIEI offers vital administrative support.',
+          provides: [
+            'Program sponsorship and administration',
+            'Meal reimbursement processing',
+            'Nutrition education and resources',
+            'Compliance monitoring and support'
+          ],
+          benefits: [
+            'Child care providers',
+            'Preschool programs',
+            'Community organizations'
+          ],
+          imageUrl: 'images/service6.svg'
+        }
+      ];
+    }
+
+    function renderProgramsList() {
+      const list = document.getElementById('programsList');
+      list.innerHTML = '';
+
+      if (programs.length === 0) {
+        list.innerHTML = '<p style="grid-column: 1/-1;">No programs added yet.</p>';
+        return;
+      }
+
+      programs.forEach(program => {
+        const card = document.createElement('div');
+        card.className = 'program-card';
+        card.innerHTML = `
+          <h3>${program.name}</h3>
+          <p>${program.description.substring(0, 100)}...</p>
+          <div class="program-actions">
+            <button class="edit-btn" onclick="openEditProgramModal('${program.id}')">Edit</button>
+            <button class="delete-btn" onclick="deleteProgram('${program.id}')">Delete</button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    function openAddProgramModal() {
+      editingProgramId = null;
+      document.getElementById('modalTitle').textContent = 'Add New Program';
+      document.getElementById('programForm').reset();
+      document.getElementById('providesList').innerHTML = '';
+      document.getElementById('benefitsList').innerHTML = '';
+      addProvideItem();
+      addBenefitItem();
+      document.getElementById('programModal').classList.add('active');
+    }
+
+    function openEditProgramModal(id) {
+      const program = programs.find(p => p.id === id);
+      if (!program) return;
+
+      editingProgramId = id;
+      document.getElementById('modalTitle').textContent = 'Edit Program';
+      document.getElementById('programName').value = program.name;
+      document.getElementById('programId').value = program.id;
+      document.getElementById('ageRange').value = program.ageRange || '';
+      document.getElementById('description').value = program.description;
+      document.getElementById('location').value = program.location || '';
+      document.getElementById('imageUrl').value = program.imageUrl || '';
+
+      document.getElementById('providesList').innerHTML = '';
+      (program.provides || []).forEach(item => {
+        addProvideItem(item);
+      });
+      if (!program.provides || program.provides.length === 0) addProvideItem();
+
+      document.getElementById('benefitsList').innerHTML = '';
+      (program.benefits || []).forEach(item => {
+        addBenefitItem(item);
+      });
+      if (!program.benefits || program.benefits.length === 0) addBenefitItem();
+
+      document.getElementById('programModal').classList.add('active');
+    }
+
+    function closeProgramModal() {
+      document.getElementById('programModal').classList.remove('active');
+      editingProgramId = null;
+    }
+
+    function addProvideItem(value = '') {
+      const container = document.getElementById('providesList');
+      const div = document.createElement('div');
+      div.className = 'list-item';
+      div.innerHTML = `
+        <input type="text" placeholder="e.g., Speech and language therapy" value="${value}">
+        <button type="button" onclick="this.parentElement.remove()">Remove</button>
+      `;
+      container.appendChild(div);
+    }
+
+    function addBenefitItem(value = '') {
+      const container = document.getElementById('benefitsList');
+      const div = document.createElement('div');
+      div.className = 'list-item';
+      div.innerHTML = `
+        <input type="text" placeholder="e.g., Children with developmental delays" value="${value}">
+        <button type="button" onclick="this.parentElement.remove()">Remove</button>
+      `;
+      container.appendChild(div);
+    }
+
+    document.getElementById('programForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const provides = Array.from(document.getElementById('providesList').querySelectorAll('input'))
+        .map(input => input.value)
+        .filter(v => v.trim());
+
+      const benefits = Array.from(document.getElementById('benefitsList').querySelectorAll('input'))
+        .map(input => input.value)
+        .filter(v => v.trim());
+
+      const programData = {
+        id: document.getElementById('programId').value,
+        name: document.getElementById('programName').value,
+        ageRange: document.getElementById('ageRange').value,
+        description: document.getElementById('description').value,
+        location: document.getElementById('location').value,
+        imageUrl: document.getElementById('imageUrl').value,
+        provides,
+        benefits
+      };
+
+      if (editingProgramId) {
+        const index = programs.findIndex(p => p.id === editingProgramId);
+        if (index !== -1) {
+          programs[index] = programData;
+        }
+      } else {
+        programs.push(programData);
+      }
+
+      await savePrograms();
+      closeProgramModal();
+      renderProgramsList();
+    });
+
+    async function savePrograms() {
+      try {
+        // Upsert current program into Firestore using its id
+        const p = programs[programs.length - 1];
+        if (!p || !p.id) throw new Error('Program must have an id');
+        await window.firebaseDB.collection('programs').doc(p.id).set(p, { merge: true });
+        showSuccessMessage('Program saved to Firestore!');
+      } catch (error) {
+        console.error('Error saving programs:', error);
+        showErrorMessage('Error saving program');
+      }
+    }
+
+    async function deleteProgram(id) {
+      if (!confirm('Are you sure you want to delete this program?')) return;
+      try {
+        await window.firebaseDB.collection('programs').doc(id).delete();
+        programs = programs.filter(p => p.id !== id);
+        renderProgramsList();
+        showSuccessMessage('Program deleted');
+      } catch (e) {
+        console.error('Delete program error:', e);
+        showErrorMessage('Error deleting program');
+      }
+    }
+
+    function showSuccessMessage(message) {
+      const msg = document.getElementById('successMessage');
+      msg.textContent = '✓ ' + message;
+      msg.classList.add('show');
+      setTimeout(() => msg.classList.remove('show'), 3000);
+    }
+
+    function showErrorMessage(message) {
+      const msg = document.getElementById('errorMessage');
+      msg.textContent = '✗ ' + message;
+      msg.classList.add('show');
+      setTimeout(() => msg.classList.remove('show'), 3000);
+    }
+
+    // GALLERY MANAGEMENT
+    const uploadForm = document.getElementById('uploadForm');
+    const imageInput = document.getElementById('imageInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+
+    uploadForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      uploadFiles();
+    });
+
+    function uploadFiles() {
+      const files = Array.from(imageInput.files);
+      if (files.length === 0) return;
+
+      uploadBtn.disabled = true;
+
+      let uploaded = 0;
+      files.forEach((file) => {
+        const formData = new FormData();
+        const metadata = {
+          name: file.name,
+          mimeType: file.type,
+          parents: [GALLERY_FOLDER_ID]
+        };
+        formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        formData.append('file', file);
+
+        fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+          method: 'POST',
+          headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
+          body: formData
+        })
+        .then(response => response.json())
+        .then(async uploadedFile => {
+          // Get the shareable Google Drive link
+          const driveLink = `https://drive.google.com/uc?export=view&id=${uploadedFile.id}`;
+          
+          // Save to Firestore
+          try {
+            await window.firebaseDB.collection('gallery').add({
+              imageUrl: driveLink,
+              title: file.name,
+              driveFileId: uploadedFile.id,
+              uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          } catch (error) {
+            console.error('Error saving to Firestore:', error);
+          }
+          
+          uploaded++;
+          if (uploaded === files.length) {
+            imageInput.value = '';
+            uploadBtn.disabled = false;
+            showGallerySuccessMessage();
+            setTimeout(() => loadGalleryImages(), 1500);
+          }
+        })
+        .catch(error => {
+          console.error('Upload error:', error);
+          alert('Error uploading file: ' + file.name);
+          uploadBtn.disabled = false;
+        });
+      });
+    }
+
+    function showGallerySuccessMessage() {
+      const msg = document.getElementById('gallerySuccessMessage');
+      msg.classList.add('show');
+      setTimeout(() => msg.classList.remove('show'), 3000);
+    }
+
+    function loadGalleryImages() {
+      const imageCount = document.getElementById('imageCount');
+      const gallery = document.getElementById('galleryPreview');
+      imageCount.textContent = 'Loading images...';
+      gallery.innerHTML = '';
+      
+      window.firebaseDB.collection('gallery').orderBy('uploadedAt', 'desc').get()
+        .then(snapshot => {
+          if (snapshot.size === 0) {
+            imageCount.textContent = 'No images uploaded yet';
+            return;
+          }
+
+          const files = [];
+          snapshot.forEach(doc => {
+            files.push({ id: doc.id, ...doc.data() });
+          });
+
+          files.forEach(file => {
+            const div = document.createElement('div');
+            div.className = 'preview-item';
+            div.innerHTML = `
+              <img src="${file.imageUrl}" alt="${file.title}">
+              <button class="delete-btn" onclick="deleteImage('${file.id}')">×</button>
+            `;
+            gallery.appendChild(div);
+          });
+
+          imageCount.textContent = `${files.length} image${files.length !== 1 ? 's' : ''} in gallery`;
+        })
+        .catch(error => {
+          console.error('Error loading images:', error);
+          imageCount.textContent = 'Error loading images.';
+        });
+    }
+
+    function deleteImage(docId) {
+      if (confirm('Delete this image?')) {
+        window.firebaseDB.collection('gallery').doc(docId).delete()
+          .then(() => {
+            loadGalleryImages();
+          })
+          .catch(error => {
+            console.error('Error deleting image:', error);
+            alert('Error deleting image');
+          });
+      }
+    }
+
+    // Helper: Upload a file to Google Drive and return file info
+    async function uploadToDrive(file, parentFolderId) {
+      if (!accessToken) throw new Error('No OAuth access token');
+      if (!parentFolderId || parentFolderId.includes('GOES_HERE')) throw new Error('Set the Drive folder ID');
+      const formData = new FormData();
+      const metadata = { name: file.name, mimeType: file.type, parents: [parentFolderId] };
+      formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+      formData.append('file', file);
+      const uploadRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
+        body: formData
+      });
+      if (!uploadRes.ok) throw new Error('Drive upload failed');
+      const uploaded = await uploadRes.json();
+      const infoRes = await fetch(`https://www.googleapis.com/drive/v3/files/${uploaded.id}?fields=id,name,webViewLink,webContentLink,thumbnailLink`, {
+        headers: new Headers({ 'Authorization': 'Bearer ' + accessToken })
+      });
+      const info = await infoRes.json();
+      return info; // { id, name, webViewLink, webContentLink, thumbnailLink }
+    }
+
+    // Initialize when page loads (Email/Password Auth)
+    window.addEventListener('load', initializeEmailAuth);
+
+    // Initialize Email/Password Auth
+    function initializeEmailAuth() {
+      firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+          currentUserEmail = (user.email || '').toLowerCase();
+          localStorage.setItem('adminUserEmail', currentUserEmail);
+          showAdminPanel();
+          setupRolesAndPermissions();
+          loadPrograms();
+          if (accessToken) loadGalleryImages();
+        } else {
+          document.getElementById('adminPanel').style.display = 'none';
+          document.getElementById('loginPrompt').style.display = 'block';
+        }
+      });
+    }
+
+    // Sign in with email/password
+    async function signInEmailPassword() {
+      const email = String(document.getElementById('loginEmail').value || '').trim().toLowerCase();
+      const password = String(document.getElementById('loginPassword').value || '');
+      try {
+        await firebase.auth().signInWithEmailAndPassword(email, password);
+      } catch (e) {
+        console.error('Sign-in failed:', e);
+        const msg = mapAuthError(e);
+        showLoginError(msg);
+      }
+    }
+
+    function showLoginError(message) {
+      const el = document.getElementById('loginErrorMessage');
+      if (!el) return alert(message);
+      el.textContent = '✗ ' + message;
+      el.classList.add('show');
+    }
+
+    function mapAuthError(err) {
+      const code = (err && err.code) || '';
+      switch (code) {
+        case 'auth/user-not-found': return 'No account found for this email.';
+        case 'auth/wrong-password': return 'Incorrect password. Try again or reset it.';
+        case 'auth/invalid-email': return 'Invalid email format.';
+        case 'auth/too-many-requests': return 'Too many attempts. Please wait and try again.';
+        case 'auth/network-request-failed': return 'Network error. Check connection or ad blockers.';
+        default: return (err && err.message) ? err.message : 'Sign-in failed. Please check your credentials.';
+      }
+    }
+
+    // --- BLOG POSTS (Firestore) ---
+    let blogPosts = [];
+    let editingPostId = null;
+
+    async function loadBlogPosts() {
+      const list = document.getElementById('blogList');
+      list.innerHTML = '<p style="grid-column:1/-1;color:var(--text-muted);">Loading posts...</p>';
+      try {
+        const snap = await window.firebaseDB.collection('posts').orderBy('createdAt','desc').get();
+        blogPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderBlogList();
+      } catch (e) {
+        list.innerHTML = '<p style="grid-column:1/-1;color:var(--text-muted);">Error loading posts.</p>';
+      }
+    }
+
+    function renderBlogList() {
+      const list = document.getElementById('blogList');
+      list.innerHTML = '';
+      if (!blogPosts.length) {
+        list.innerHTML = '<p style="grid-column:1/-1;color:var(--text-muted);">No posts yet.</p>';
+        return;
+      }
+      blogPosts.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'program-card';
+        const img = p.imageUrl || 'images/service1.svg';
+        const excerpt = p.excerpt || (p.content ? p.content.slice(0, 120) + '…' : '');
+        card.innerHTML = `
+          <img src="${img}" alt="${p.title}" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;margin-bottom:1rem;">
+          <h3>${p.title}</h3>
+          <p>${excerpt}</p>
+          <div class="program-actions">
+            <button class="edit-btn" onclick="openEditBlogModal('${p.id}')">Edit</button>
+            <button class="delete-btn" onclick="deleteBlogPost('${p.id}')">Delete</button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    function openAddBlogModal() {
+      editingPostId = null;
+      document.getElementById('blogModalTitle').textContent = 'Write New Post';
+      document.getElementById('blogForm').reset();
+      document.getElementById('blogModal').classList.add('active');
+    }
+
+    function openEditBlogModal(id) {
+      const p = blogPosts.find(x => x.id === id);
+      if (!p) return;
+      editingPostId = id;
+      document.getElementById('blogModalTitle').textContent = 'Edit Post';
+      document.getElementById('postTitle').value = p.title || '';
+      document.getElementById('postExcerpt').value = p.excerpt || '';
+      document.getElementById('postContent').value = p.content || '';
+      document.getElementById('postImageUrl').value = p.imageUrl || '';
+      document.getElementById('blogModal').classList.add('active');
+    }
+
+    function closeBlogModal() {
+      document.getElementById('blogModal').classList.remove('active');
+      editingPostId = null;
+    }
+
+    document.getElementById('blogForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('postTitle').value.trim();
+      const excerpt = document.getElementById('postExcerpt').value.trim();
+      const content = document.getElementById('postContent').value.trim();
+      let imageUrl = document.getElementById('postImageUrl').value.trim() || null;
+      const imageFile = document.getElementById('postImageFile').files[0];
+      if (imageFile) {
+        try {
+          const info = await uploadToDrive(imageFile, BLOG_FOLDER_ID);
+          imageUrl = info.thumbnailLink ? info.thumbnailLink.replace('=s220', '=s600') : info.webContentLink;
+        } catch (err) {
+          showBlogError('Image upload failed');
+          return;
+        }
+      }
+      if (!title || !excerpt || !content) {
+        showBlogError('Please fill in all required fields.');
+        return;
+      }
+      try {
+        if (editingPostId) {
+          await window.firebaseDB.collection('posts').doc(editingPostId).update({ title, excerpt, content, imageUrl });
+          showBlogSuccess('Post updated!');
+        } else {
+          await window.firebaseDB.collection('posts').add({ title, excerpt, content, imageUrl, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+          showBlogSuccess('Post published!');
+        }
+        closeBlogModal();
+        loadBlogPosts();
+      } catch (e) {
+        showBlogError('Error saving post.');
+      }
+    });
+
+    async function deleteBlogPost(id) {
+      if (!confirm('Delete this post?')) return;
+      try {
+        await window.firebaseDB.collection('posts').doc(id).delete();
+        showBlogSuccess('Post deleted!');
+        loadBlogPosts();
+      } catch (e) {
+        showBlogError('Error deleting post.');
+      }
+    }
+
+    function showBlogSuccess(msg) {
+      const el = document.getElementById('blogSuccessMessage');
+      el.textContent = '✓ ' + msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 3000);
+    }
+    function showBlogError(msg) {
+      const el = document.getElementById('blogErrorMessage');
+      el.textContent = '✗ ' + msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 3000);
+    }
+
+    // Load posts when Blog tab is activated
+    const _switchTabOrig = switchTab;
+    switchTab = function(tabName) {
+      _switchTabOrig(tabName);
+      if (tabName === 'blog') loadBlogPosts();
+      if (tabName === 'roles' && isSuperadmin) loadRoles();
+    }
+    // --- TEAM CRUD WITH FIREBASE ---
+    let teamMembers = [];
+    let editingTeamId = null;
+
+    // Load team members from Firestore
+    async function loadTeamMembers() {
+      const teamList = document.getElementById('teamList');
+      teamList.innerHTML = '<p style="grid-column: 1/-1; color: var(--text-muted);">Loading team members...</p>';
+      try {
+        const snapshot = await window.firebaseDB.collection('team').get();
+        teamMembers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderTeamList();
+      } catch (e) {
+        teamList.innerHTML = '<p style="grid-column: 1/-1; color: var(--text-muted);">Error loading team members.</p>';
+      }
+    }
+
+    function renderTeamList() {
+      const teamList = document.getElementById('teamList');
+      teamList.innerHTML = '';
+      if (!teamMembers.length) {
+        teamList.innerHTML = '<p style="grid-column: 1/-1; color: var(--text-muted);">No team members added yet.</p>';
+        return;
+      }
+      teamMembers.forEach(member => {
+        const card = document.createElement('div');
+        card.className = 'program-card';
+        card.innerHTML = `
+          <img src="${member.imageUrl || ''}" alt="${member.name}" style="width:80px;height:80px;object-fit:cover;border-radius:50%;margin-bottom:1rem;">
+          <h3>${member.name}</h3>
+          <p>${member.role}</p>
+          <div class="program-actions">
+            <button class="edit-btn" onclick="openEditTeamModal('${member.id}')">Edit</button>
+            <button class="delete-btn" onclick="deleteTeamMember('${member.id}')">Delete</button>
+          </div>
+        `;
+        teamList.appendChild(card);
+      });
+    }
+
+    function openAddTeamModal() {
+      editingTeamId = null;
+      document.getElementById('teamModalTitle').textContent = 'Add New Team Member';
+      document.getElementById('teamForm').reset();
+      document.getElementById('teamModal').classList.add('active');
+    }
+
+    function openEditTeamModal(id) {
+      const member = teamMembers.find(m => m.id === id);
+      if (!member) return;
+      editingTeamId = id;
+      document.getElementById('teamModalTitle').textContent = 'Edit Team Member';
+      document.getElementById('teamName').value = member.name;
+      document.getElementById('teamRole').value = member.role;
+      document.getElementById('teamImage').value = '';
+      document.getElementById('teamModal').classList.add('active');
+    }
+
+    function closeTeamModal() {
+      document.getElementById('teamModal').classList.remove('active');
+      editingTeamId = null;
+    }
+
+    document.getElementById('teamForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('teamName').value.trim();
+      const role = document.getElementById('teamRole').value.trim();
+      const imageFile = document.getElementById('teamImage').files[0];
+      if (!name || !role || (!editingTeamId && !imageFile)) {
+        showTeamError('All fields are required.');
+        return;
+      }
+      try {
+        let imageUrl = null;
+        if (imageFile) {
+          const info = await uploadToDrive(imageFile, TEAM_FOLDER_ID);
+          imageUrl = info.thumbnailLink ? info.thumbnailLink.replace('=s220', '=s400') : info.webContentLink;
+        }
+        if (editingTeamId) {
+          // Update
+          const updateData = { name, role };
+          if (imageUrl) updateData.imageUrl = imageUrl;
+          await window.firebaseDB.collection('team').doc(editingTeamId).update(updateData);
+          showTeamSuccess('Team member updated!');
+        } else {
+          // Add
+          await window.firebaseDB.collection('team').add({ name, role, imageUrl });
+          showTeamSuccess('Team member added!');
+        }
+        closeTeamModal();
+        loadTeamMembers();
+      } catch (e) {
+        showTeamError('Error saving team member.');
+      }
+    });
+
+    async function deleteTeamMember(id) {
+      if (!confirm('Delete this team member?')) return;
+      try {
+        await window.firebaseDB.collection('team').doc(id).delete();
+        showTeamSuccess('Team member deleted!');
+        loadTeamMembers();
+      } catch (e) {
+        showTeamError('Error deleting team member.');
+      }
+    }
+
+    function showTeamSuccess(msg) {
+      const el = document.getElementById('teamSuccessMessage');
+      el.textContent = '✓ ' + msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 3000);
+    }
+    function showTeamError(msg) {
+      const el = document.getElementById('teamErrorMessage');
+      el.textContent = '✗ ' + msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 3000);
+    }
+
+    // Load team members when Team tab is activated
+    const originalSwitchTab = switchTab;
+    switchTab = function(tabName) {
+      originalSwitchTab(tabName);
+      if (tabName === 'team') loadTeamMembers();
+    }
+
+    // --- NEWSLETTER SUBSCRIBERS ---
+    let newsletterSubs = [];
+
+    async function loadNewsletterSubs() {
+      const list = document.getElementById('newsletterList');
+      if (!list) return;
+      list.innerHTML = '<p style="grid-column:1/-1;color:var(--text-muted);">Loading subscribers...</p>';
+      try {
+        let snap;
+        try {
+          snap = await window.firebaseDB.collection('newsletter').orderBy('createdAt','desc').get();
+        } catch (orderErr) {
+          console.warn('Newsletter orderBy failed, falling back:', orderErr);
+          snap = await window.firebaseDB.collection('newsletter').get();
+        }
+        newsletterSubs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderNewsletterList();
+      } catch (e) {
+        console.error('Newsletter load error:', e);
+        list.innerHTML = '<p style="grid-column:1/-1;color:var(--text-muted);">Unable to load subscribers.</p>';
+      }
+    }
+
+    function renderNewsletterList() {
+      const list = document.getElementById('newsletterList');
+      if (!list) return;
+      list.innerHTML = '';
+      if (!newsletterSubs.length) {
+        list.innerHTML = '<p style="grid-column:1/-1;color:var(--text-muted);">No subscribers yet.</p>';
+        return;
+      }
+      const container = document.createElement('div');
+      container.className = 'program-card';
+      const rows = newsletterSubs.map(s => {
+        const dt = toReadableDate(s.createdAt);
+        return `<div class="list-item"><input value="${escapeHtml(s.email || '')}" readonly><span style="color:var(--text-muted);">${dt}</span></div>`;
+      }).join('');
+      container.innerHTML = `
+        <h3 style="margin-bottom:1rem;">Subscribers (${newsletterSubs.length})</h3>
+        ${rows}
+      `;
+      list.appendChild(container);
+    }
+
+    function exportNewsletterCSV() {
+      const header = ['email','createdAt'];
+      const lines = [header.join(',')].concat(
+        newsletterSubs.map(s => {
+          const email = (s.email || '').replace(/"/g,'""');
+          const dt = toISOStringSafe(s.createdAt);
+          return `"${email}","${dt}"`;
+        })
+      );
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `newsletter_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function exportNewsletterXLSX() {
+      if (typeof XLSX === 'undefined') return exportNewsletterCSV();
+      const data = newsletterSubs.map(s => ({
+        Email: s.email || '',
+        CreatedAt: toReadableDate(s.createdAt)
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Subscribers');
+      XLSX.writeFile(wb, `newsletter_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    function toReadableDate(value) {
+      const ms = toMillis(value);
+      if (!ms) return '';
+      const d = new Date(ms);
+      return d.toLocaleString();
+    }
+
+    function toISOStringSafe(value) {
+      const ms = toMillis(value);
+      return ms ? new Date(ms).toISOString() : '';
+    }
+
+    function toMillis(value) {
+      if (!value) return 0;
+      try {
+        if (typeof value.toMillis === 'function') return value.toMillis();
+        if (typeof value.toDate === 'function') return value.toDate().getTime();
+        if (value instanceof Date) return value.getTime();
+        const d = new Date(value);
+        const t = d.getTime();
+        return isNaN(t) ? 0 : t;
+      } catch (_) {
+        return 0;
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>\"]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[s]));
+    }
+
+    const switchTabOrig3 = switchTab;
+    switchTab = function(tabName) {
+      switchTabOrig3(tabName);
+      if (tabName === 'newsletter') loadNewsletterSubs();
+      if (tabName === 'marketplace') loadMarketplaceItems();
+    }
+
+    // --- MARKETPLACE ---
+    let marketplaceItems = [];
+    let editingMarketplaceId = null;
+
+    async function loadMarketplaceItems() {
+      const container = document.getElementById('marketplaceItemsList');
+      if (!container) return;
+      if (!hasTab('marketplace')) {
+        container.innerHTML = '<p style="grid-column: 1/-1; color: var(--text-muted);">You do not have permission to manage marketplace items. Enable the "marketplace" tab for this admin in Roles.</p>';
+        return;
+      }
+      container.innerHTML = '<p style="grid-column: 1/-1; color: var(--text-muted);">Loading items...</p>';
+      try {
+        const snapshot = await db.collection('marketplace').orderBy('createdAt', 'desc').get();
+        marketplaceItems = [];
+        snapshot.forEach(doc => {
+          marketplaceItems.push({ id: doc.id, ...doc.data() });
+        });
+        displayMarketplaceItems();
+      } catch (error) {
+        console.error('Error loading marketplace items:', error);
+        container.innerHTML = '<p style="grid-column: 1/-1; color: var(--text-muted);">Error loading items.</p>';
+      }
+    }
+
+    function displayMarketplaceItems() {
+      const container = document.getElementById('marketplaceItemsList');
+      if (marketplaceItems.length === 0) {
+        container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 2rem;">No marketplace items yet.</p>';
+        return;
+      }
+
+      container.innerHTML = marketplaceItems.map(item => `
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+            <div>
+              <h4 style="color: var(--brand-blue); margin: 0 0 0.3rem 0;">${item.title}</h4>
+              <p style="color: var(--brand-orange); font-size: 0.9rem; margin: 0 0 0.5rem 0;">${item.category || 'General'}</p>
+              <p style="color: var(--text); margin: 0 0 0.5rem 0;">${item.description.substring(0, 100)}...</p>
+              <p style="color: var(--brand-blue); font-weight: 600; margin: 0.5rem 0 0 0;">Price: $${parseFloat(item.price).toFixed(2)}</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="edit-btn" onclick="openEditMarketplaceModal('${item.id}')">Edit</button>
+              <button class="delete-btn" onclick="deleteMarketplaceItem('${item.id}')">Delete</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openAddMarketplaceItemModal() {
+      editingMarketplaceId = null;
+      document.getElementById('marketplaceModalTitle').textContent = 'Add Marketplace Item';
+      document.getElementById('marketplaceForm').reset();
+      document.getElementById('marketplaceModal').classList.add('active');
+    }
+
+    function openEditMarketplaceModal(id) {
+      const item = marketplaceItems.find(x => x.id === id);
+      if (!item) return;
+      editingMarketplaceId = id;
+      document.getElementById('marketplaceModalTitle').textContent = 'Edit Marketplace Item';
+      document.getElementById('itemTitle').value = item.title || '';
+      document.getElementById('itemCategory').value = item.category || '';
+      document.getElementById('itemDescription').value = item.description || '';
+      document.getElementById('itemPrice').value = item.price || '';
+      document.getElementById('itemAvailability').value = item.availability || '';
+      document.getElementById('itemContactEmail').value = item.contactEmail || '';
+      document.getElementById('itemImageUrl').value = item.imageUrl || '';
+      document.getElementById('marketplaceModal').classList.add('active');
+    }
+
+    function closeMarketplaceModal() {
+      document.getElementById('marketplaceModal').classList.remove('active');
+      editingMarketplaceId = null;
+    }
+
+    document.getElementById('marketplaceForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('itemTitle').value.trim();
+      const category = document.getElementById('itemCategory').value.trim();
+      const description = document.getElementById('itemDescription').value.trim();
+      const price = parseFloat(document.getElementById('itemPrice').value);
+      const availability = document.getElementById('itemAvailability').value.trim();
+      const contactEmail = document.getElementById('itemContactEmail').value.trim();
+      let imageUrl = document.getElementById('itemImageUrl').value.trim() || null;
+      const imageFile = document.getElementById('itemImageFile').files[0];
+
+      if (imageFile) {
+        try {
+          const info = await uploadToDrive(imageFile, MARKETPLACE_FOLDER_ID);
+          imageUrl = info.thumbnailLink ? info.thumbnailLink.replace('=s220', '=s600') : info.webContentLink;
+        } catch (err) {
+          showMarketplaceError('Image upload failed');
+          return;
+        }
+      }
+
+      if (!title || !category || !description || !price || !availability || !contactEmail) {
+        showMarketplaceError('Please fill in all required fields.');
+        return;
+      }
+
+      try {
+        const data = { title, category, description, price, availability, contactEmail, imageUrl };
+        if (editingMarketplaceId) {
+          await db.collection('marketplace').doc(editingMarketplaceId).update(data);
+          showMarketplaceSuccess('Item updated!');
+        } else {
+          data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+          await db.collection('marketplace').add(data);
+          showMarketplaceSuccess('Item added!');
+        }
+        closeMarketplaceModal();
+        loadMarketplaceItems();
+      } catch (e) {
+        console.error('Error saving item:', e);
+        showMarketplaceError('Error saving item.');
+      }
+    });
+
+    async function deleteMarketplaceItem(id) {
+      if (!confirm('Delete this item?')) return;
+      try {
+        await db.collection('marketplace').doc(id).delete();
+        showMarketplaceSuccess('Item deleted!');
+        loadMarketplaceItems();
+      } catch (e) {
+        console.error('Error deleting item:', e);
+        showMarketplaceError('Error deleting item.');
+      }
+    }
+
+    function showMarketplaceSuccess(msg) {
+      const el = document.getElementById('marketplaceSuccessMessage');
+      el.textContent = '✓ ' + msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 3000);
+    }
+
+    function showMarketplaceError(msg) {
+      const el = document.getElementById('marketplaceErrorMessage');
+      el.textContent = '✗ ' + msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 3000);
+    }
+
+    // --- ENQUIRIES ---
+    let enquiries = [];
+    async function loadEnquiries() {
+      const tbody = document.getElementById('enquiriesBody');
+      if (!tbody) return;
+      // Quick permission hint
+      if (!hasTab('enquiries')) {
+        tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted);padding:12px;">You do not have permission to view enquiries. Enable the "enquiries" tab for this admin in Roles.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted);padding:12px;">Loading enquiries...</td></tr>';
+      try {
+        let snap;
+        try {
+          snap = await window.firebaseDB.collection('enquiries').orderBy('createdAt','desc').get();
+        } catch (orderErr) {
+          console.warn('Enquiries orderBy failed, falling back:', orderErr);
+          snap = await window.firebaseDB.collection('enquiries').get();
+        }
+        enquiries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderEnquiries();
+      } catch (e) {
+        console.error('Enquiries load error:', e);
+        const code = (e && e.code) ? String(e.code) : '';
+        let msg = 'Unable to load enquiries.';
+        if (code === 'permission-denied') {
+          msg = 'Permission denied. Ensure Firestore rules grant read to admins with the "enquiries" tab and that you are signed in.';
+        } else if (code) {
+          msg += ' (' + code + ')';
+        }
+        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-muted);padding:12px;">${msg}</td></tr>`;
+      }
+    }
+
+    function renderEnquiries() {
+      const tbody = document.getElementById('enquiriesBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      if (!enquiries.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted);padding:12px;">No enquiries yet.</td></tr>';
+        return;
+      }
+      enquiries.forEach(q => {
+        const tr = document.createElement('tr');
+        const pad = 'padding:8px;border-bottom:1px solid var(--border);vertical-align:top;';
+        const dt = toReadableDate(q.createdAt);
+        tr.innerHTML = `
+          <td style="${pad}">${escapeHtml(q.name || '')}</td>
+          <td style="${pad}">${escapeHtml(q.email || '')}</td>
+          <td style="${pad}">${escapeHtml(q.phone || '')}</td>
+          <td style="${pad}">${escapeHtml(q.address || '')}</td>
+          <td style="${pad}">${q.childAge != null ? escapeHtml(String(q.childAge)) : ''}</td>
+          <td style="${pad}">${escapeHtml(q.message || '')}</td>
+          <td style="${pad}">${dt}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function exportEnquiriesCSV() {
+      const header = ['name','email','phone','address','childAge','message','createdAt'];
+      const lines = [header.join(',')].concat(
+        enquiries.map(q => {
+          const v = (x) => String(x ?? '').replace(/\"/g,'\"\"');
+          return `\"${v(q.name)}\",\"${v(q.email)}\",\"${v(q.phone)}\",\"${v(q.address)}\",\"${v(q.childAge)}\",\"${v(q.message)}\",\"${toISOStringSafe(q.createdAt)}\"`;
+        })
+      );
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `enquiries_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function exportEnquiriesXLSX() {
+      if (typeof XLSX === 'undefined') return exportEnquiriesCSV();
+      const data = enquiries.map(q => ({
+        Name: q.name || '',
+        Email: q.email || '',
+        Phone: q.phone || '',
+        Address: q.address || '',
+        ChildAge: q.childAge ?? '',
+        Message: q.message || '',
+        Submitted: toReadableDate(q.createdAt)
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Enquiries');
+      XLSX.writeFile(wb, `enquiries_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    const switchTabOrig4 = switchTab;
+    switchTab = function(tabName) {
+      switchTabOrig4(tabName);
+      if (tabName === 'enquiries') loadEnquiries();
+    }
+
+    // --- CONTACTS ---
+    let contacts = [];
+    async function loadContacts() {
+      const tbody = document.getElementById('contactsBody');
+      if (!tbody) return;
+      if (!hasTab('contacts')) {
+        tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted);padding:12px;">You do not have permission to view contacts. Enable the "contacts" tab for this admin in Roles.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted);padding:12px;">Loading contacts...</td></tr>';
+      try {
+        let snap;
+        try {
+          snap = await window.firebaseDB.collection('contacts').orderBy('createdAt','desc').get();
+        } catch (orderErr) {
+          console.warn('Contacts orderBy failed, falling back:', orderErr);
+          snap = await window.firebaseDB.collection('contacts').get();
+        }
+        contacts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderContacts();
+      } catch (e) {
+        console.error('Contacts load error:', e);
+        const code = (e && e.code) ? String(e.code) : '';
+        let msg = 'Unable to load contacts.';
+        if (code === 'permission-denied') {
+          msg = 'Permission denied. Ensure Firestore rules grant read to admins with the "contacts" tab and that you are signed in.';
+        } else if (code) {
+          msg += ' (' + code + ')';
+        }
+        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-muted);padding:12px;">${msg}</td></tr>`;
+      }
+    }
+
+    function renderContacts() {
+      const tbody = document.getElementById('contactsBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      if (!contacts.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted);padding:12px;">No contacts yet.</td></tr>';
+        return;
+      }
+      contacts.forEach(c => {
+        const tr = document.createElement('tr');
+        const pad = 'padding:8px;border-bottom:1px solid var(--border);vertical-align:top;';
+        const dt = toReadableDate(c.createdAt);
+        tr.innerHTML = `
+          <td style="${pad}">${escapeHtml(c.name || '')}</td>
+          <td style="${pad}">${escapeHtml(c.email || '')}</td>
+          <td style="${pad}">${escapeHtml(c.phone || '')}</td>
+          <td style="${pad}">${escapeHtml(c.subject || '')}</td>
+          <td style="${pad}">${escapeHtml(c.message || '')}</td>
+          <td style="${pad}">${dt}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    const switchTabOrig5 = switchTab;
+    switchTab = function(tabName) {
+      switchTabOrig5(tabName);
+      if (tabName === 'contacts') loadContacts();
+    }
+  </script>
+
+</body>
+</html>
