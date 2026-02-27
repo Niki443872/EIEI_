@@ -5,24 +5,231 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EIEI Admin - Programs Management</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <!-- Firebase SDKs (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="components/firebase-init.js"></script>
+  <script src="components/admin-chat.js"></script>
   <link rel="stylesheet" href="style.css" />
   <script src="https://accounts.google.com/gsi/client"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
+    html, body {
+      margin: 0;
+      padding: 0 !important;
+      height: 100%;
+      overflow: hidden;
+      background: #ffffff !important;
+    }
+
+    .nav {
+      display: none !important;
+    }
+
     .admin-container {
       min-height: 100vh;
-      background: var(--bg);
-      padding-top: 80px;
+      background: #ffffff;
+      padding-top: 0;
+      display: flex;
+      height: 100vh;
+      width: 100%;
     }
 
     .admin-content {
-      max-width: 1200px;
+      max-width: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      gap: 0;
+      width: 100%;
+      flex: 1;
+      height: 100%;
+    }
+
+    .admin-sidebar {
+      width: 280px;
+      background: linear-gradient(135deg, #2a4175 0%, #4a6fa5 100%);
+      border-radius: 0;
+      padding: 2rem 1.5rem;
+      height: 100vh;
+      position: fixed;
+      left: 0;
+      top: 0;
+      box-shadow: 8px 0 32px rgba(0,0,0,0.25), 4px 0 16px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      z-index: 100;
+    }
+
+    .sidebar-search {
+      display: flex;
+      align-items: center;
+      background: rgba(123, 104, 238, 0.1);
+      border: 1px solid #7b68ee;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      margin-bottom: 1.5rem;
+      gap: 0.5rem;
+    }
+
+    .sidebar-search input {
+      background: none;
+      border: none;
+      color: #e0e0e0;
+      flex: 1;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    .sidebar-search input::placeholder {
+      color: #a0a0a0;
+    }
+
+    .sidebar-create-btn {
+      background: linear-gradient(135deg, #7b68ee 0%, #9a7fd0 100%);
+      color: white;
+      border: none;
+      padding: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar-create-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(123, 104, 238, 0.4);
+    }
+
+    .sidebar-calendar {
+      background: rgba(42, 65, 117, 0.15);
+      border: 1px solid rgba(252, 163, 17, 0.3);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      color: #ffffff;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.5rem;
+    }
+
+    .calendar-day {
+      width: 100%;
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 1px solid transparent;
+    }
+
+    .calendar-day:hover {
+      background: rgba(252, 163, 17, 0.2);
+    }
+
+    .calendar-day.active {
+      background: #fca311;
+      color: #2a4175;
+      font-weight: 600;
+    }
+
+    .sidebar-section {
+      margin-bottom: 2rem;
+    }
+
+    .sidebar-section-title {
+      color: #ffffff;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sidebar-section-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      cursor: pointer;
+      color: rgba(255, 255, 255, 0.8);
+      transition: all 0.3s ease;
+      font-size: 0.9rem;
+    }
+
+    .sidebar-item:hover {
+      background: rgba(252, 163, 17, 0.2);
+      color: #ffffff;
+      border-color: #fca311;
+    }
+
+    .sidebar-item.active {
+      background: rgba(252, 163, 17, 0.3);
+      color: #ffffff;
+      border-color: #fca311;
+      font-weight: 600;
+      box-shadow: inset 0 0 0 2px #fca311;
+    }
+
+    .sidebar-item-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .sidebar-nav {
+      display: none;
+    }
+
+    .admin-main {
+      flex: 1;
+      margin-left: 280px;
+      padding: 15px;
+      overflow-y: auto;
+      background: transparent;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .admin-main > * {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+      width: 75%;
       margin: 0 auto;
       padding: 2rem;
     }
@@ -31,38 +238,30 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 3rem;
-      border-bottom: 2px solid var(--border);
-      padding-bottom: 1rem;
+      padding: 2rem 2.5rem;
+      background: #ffffff;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+      flex-shrink: 0;
     }
 
     .admin-header h1 {
-      color: var(--brand-blue);
-      font-size: 2rem;
+      color: #2a4175;
+      font-size: 1.8rem;
+      margin: 0;
     }
 
-    .admin-tabs {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 2rem;
-      border-bottom: 2px solid var(--border);
+    #adminPanel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0;
     }
 
-    .admin-tab {
-      padding: 0.75rem 1.5rem;
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 1rem;
-      color: var(--text-muted);
-      transition: all 0.3s ease;
-      border-bottom: 3px solid transparent;
-      margin-bottom: -2px;
+    .tab-content {
+      display: none;
     }
 
-    .admin-tab.active {
-      color: var(--brand-blue);
-      border-bottom-color: var(--brand-blue);
+    .tab-content.active {
+      display: block;
     }
 
     .logout-btn {
@@ -80,25 +279,19 @@
       opacity: 0.9;
     }
 
-    .tab-content {
-      display: none;
-    }
-
-    .tab-content.active {
-      display: block;
-    }
-
     .upload-section {
-      background: var(--card-bg);
+      background: #ffffff;
       padding: 2rem;
-      border-radius: 20px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
       margin-bottom: 2rem;
+      border: 1px solid rgba(0,0,0,0.08);
     }
 
     .upload-section h2 {
-      color: var(--brand-blue);
-      margin-bottom: 1.5rem;
+      color: #2a4175;
+      margin-top: 0;
+      font-size: 1.5rem;
     }
 
     .form-group {
@@ -110,19 +303,28 @@
 
     .form-group label {
       font-weight: 600;
-      color: var(--text);
+      color: #111;
     }
 
     .form-group input,
     .form-group textarea,
     .form-group select {
       padding: 0.8rem;
-      border: 1px solid var(--border);
+      border: 1px solid rgba(0,0,0,0.08);
       border-radius: 8px;
-      background: var(--bg);
-      color: var(--text);
+      background: #ffffff;
+      color: #111;
       font-family: inherit;
       font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      border-color: #2a4175;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(42, 65, 117, 0.1);
     }
 
     .form-group textarea {
@@ -134,8 +336,38 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 1.5rem;
-      margin-top: 2rem;
     }
+
+    .programs-list > div {
+      background: #ffffff;
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .programs-list > div:hover {
+      border-color: #fca311;
+      box-shadow: 0 2px 12px rgba(252, 163, 17, 0.15);
+    }
+
+    .data-table {
+      color: #111;
+    }
+
+    .data-table thead {
+      background: #f5f5f7;
+    }
+
+    .data-table th {
+      color: #2a4175;
+    }
+
+    .data-table td {
+      color: #555;
+      border-color: rgba(0,0,0,0.08);
+    }
+      
 
     .program-card {
       background: var(--card-bg);
@@ -171,21 +403,84 @@
     }
 
     .edit-btn {
-      background: var(--brand-blue);
+      background: #7b68ee;
       color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
     }
 
     .edit-btn:hover {
-      opacity: 0.8;
+      background: #9a7fd0;
+      transform: translateY(-2px);
     }
 
     .delete-btn {
-      background: #dc2626;
+      background: #f44336;
       color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
     }
 
     .delete-btn:hover {
-      opacity: 0.8;
+      background: #d32f2f;
+      transform: translateY(-2px);
+    }
+
+    .gallery-preview {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .preview-item {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      background: #f5f5f5;
+      border: 1px solid rgba(0,0,0,0.08);
+      transition: all 0.3s ease;
+    }
+
+    .preview-item:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      transform: translateY(-4px);
+    }
+
+    .preview-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .preview-item .delete-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .preview-item:hover .delete-btn {
+      opacity: 1;
     }
 
     .modal {
@@ -199,6 +494,42 @@
       z-index: 1000;
       align-items: center;
       justify-content: center;
+    }
+
+    .modal-content {
+      background: #ffffff;
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 12px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    }
+
+    .modal-header {
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+      padding: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      color: #2a4175;
+      margin: 0;
+      font-size: 1.3rem;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: #555;
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .close-btn:hover {
+      color: #111;
     }
 
     .modal.active {
@@ -235,10 +566,11 @@
     }
 
     .success-message {
-      background: #d1fae5;
-      color: #065f46;
+      background: rgba(76, 175, 80, 0.15);
+      border-left: 4px solid #4caf50;
+      color: #4caf50;
       padding: 1rem;
-      border-radius: 8px;
+      border-radius: 6px;
       margin-bottom: 1rem;
       display: none;
     }
@@ -249,10 +581,11 @@
     }
 
     .error-message {
-      background: #fee2e2;
-      color: #991b1b;
+      background: rgba(244, 67, 54, 0.15);
+      border-left: 4px solid #f44336;
+      color: #f44336;
       padding: 1rem;
-      border-radius: 8px;
+      border-radius: 6px;
       margin-bottom: 1rem;
       display: none;
     }
@@ -274,25 +607,26 @@
     }
 
     .primary-btn {
-      background: var(--brand-blue);
+      background: linear-gradient(135deg, #2a4175 0%, #4a6fa5 100%);
       color: white;
       border: none;
       padding: 0.8rem 1.5rem;
       border-radius: 8px;
       cursor: pointer;
       font-weight: 600;
-      font-size: 1rem;
-      transition: opacity 0.3s ease;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
     }
 
     .primary-btn:hover {
-      opacity: 0.9;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(42, 65, 117, 0.3);
     }
 
     .secondary-btn {
-      background: var(--bg-alt);
-      color: var(--text);
-      border: 1px solid var(--border);
+      background: #f5f5f7;
+      color: #2a4175;
+      border: 1px solid #2a4175;
       padding: 0.8rem 1.5rem;
       border-radius: 8px;
       cursor: pointer;
@@ -302,17 +636,21 @@
     }
 
     .secondary-btn:hover {
-      background: var(--border);
+      background: #2a4175;
+      color: white;
     }
+      
 
     .button-group {
       display: flex;
-      gap: 1rem;
+      gap: 1.5rem;
       margin-top: 2rem;
+      flex-wrap: wrap;
     }
 
     .button-group button {
       flex: 1;
+      min-width: 150px;
     }
 
     .list-item {
@@ -343,6 +681,36 @@
       cursor: pointer;
       margin-top: 0.5rem;
     }
+
+    @media (max-width: 1024px) {
+      .admin-content {
+        flex-direction: column;
+      }
+
+      .admin-sidebar {
+        width: 100%;
+        position: static;
+        display: flex;
+      }
+
+      .sidebar-nav {
+        flex-direction: row;
+        overflow-x: auto;
+        width: 100%;
+      }
+
+      .sidebar-nav button {
+        border-left: none;
+        border-bottom: 3px solid transparent;
+        padding: 1rem 1.5rem;
+      }
+
+      .sidebar-nav button.active {
+        border-left: none;
+        border-bottom-color: var(--brand-blue);
+        background: rgba(42, 65, 117, 0.08);
+      }
+    }
   </style>
 </head>
 <body>
@@ -360,23 +728,127 @@
   <!-- ADMIN CONTENT -->
   <div class="admin-container">
     <div class="admin-content">
-      <div class="admin-header">
-        <h1>Admin Portal - Programs Management</h1>
-        <div id="authContainer"></div>
+      <!-- SIDEBAR NAVIGATION -->
+      <div class="admin-sidebar" id="adminSidebar" style="display: none;">
+        <div style="text-align: center; margin-bottom: 2rem;">
+          <img src="images/logo.png" alt="EIEI Logo" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
+        </div>
+
+        <div class="sidebar-calendar">
+          <div class="calendar-header" id="todayDate">
+            <!-- Today's date will be populated here -->
+          </div>
+          <div class="calendar-grid" id="miniCalendar">
+            <!-- Calendar will be populated here -->
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">
+            📁 CATEGORIES
+          </div>
+          <div class="sidebar-section-list">
+            <div class="sidebar-item" onclick="switchTab('programs')">
+              <span class="sidebar-item-color" style="background: #7b68ee;"></span>
+              Programs
+            </div>
+            <div class="sidebar-item" onclick="switchTab('blog')">
+              <span class="sidebar-item-color" style="background: #4caf50;"></span>
+              Blog
+            </div>
+            <div class="sidebar-item" onclick="switchTab('marketplace')">
+              <span class="sidebar-item-color" style="background: #ff6b9d;"></span>
+              Marketplace
+            </div>
+            <div class="sidebar-item" onclick="switchTab('gallery')">
+              <span class="sidebar-item-color" style="background: #ffd700;"></span>
+              Gallery
+            </div>
+            <div class="sidebar-item" onclick="switchTab('admin-chat')">
+              <span class="sidebar-item-color" style="background: #00bcd4;"></span>
+              💬 Chat
+            </div>
+            <div class="sidebar-item" onclick="switchTab('jobs')">
+              <span class="sidebar-item-color" style="background: #ff6b6b;"></span>
+              Job Openings
+            </div>
+            <div class="sidebar-item" onclick="switchTab('applications')">
+              <span class="sidebar-item-color" style="background: #ff9800;"></span>
+              Applications
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">
+            ⭐ MORE
+          </div>
+          <div class="sidebar-section-list">
+            <div class="sidebar-item" onclick="switchTab('team')">
+              <span class="sidebar-item-color" style="background: #00bcd4;"></span>
+              Team
+            </div>
+            <div class="sidebar-item" onclick="switchTab('testimonials')">
+              <span class="sidebar-item-color" style="background: #ff9800;"></span>
+              Testimonials
+            </div>
+            <div class="sidebar-item" onclick="switchTab('newsletter')">
+              <span class="sidebar-item-color" style="background: #e91e63;"></span>
+              Newsletter
+            </div>
+            <div class="sidebar-item" onclick="switchTab('enquiries')">
+              <span class="sidebar-item-color" style="background: #2196f3;"></span>
+              Enquiries
+            </div>
+            <div class="sidebar-item" onclick="switchTab('contacts')">
+              <span class="sidebar-item-color" style="background: #9c27b0;"></span>
+              Contacts
+            </div>
+            <div class="sidebar-item" id="rolesNavItem" onclick="switchTab('roles')" style="display:none;">
+              <span class="sidebar-item-color" style="background: #f44336;"></span>
+              Roles & Access
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: auto;">
+          <button onclick="logout()" style="width: 100%; padding: 0.75rem; background: #fca311; border: none; color: #ffffff; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(252, 163, 17, 0.3);">
+            🚪 Logout
+          </button>
+        </div>
       </div>
 
-      <div id="adminPanel" style="display: none;">
-        <div class="admin-tabs">
-          <button class="admin-tab active" onclick="switchTab('programs')">Programs</button>
-          <button class="admin-tab" onclick="switchTab('gallery')">Gallery Images</button>
-          <button class="admin-tab" onclick="switchTab('team')">Team</button>
-          <button class="admin-tab" onclick="switchTab('blog')">Blog</button>
-          <button class="admin-tab" onclick="switchTab('marketplace')">Marketplace</button>
-          <button class="admin-tab" onclick="switchTab('newsletter')">Newsletter</button>
-          <button class="admin-tab" onclick="switchTab('enquiries')">Enquiries</button>
-          <button class="admin-tab" onclick="switchTab('contacts')">Contacts</button>
-          <button class="admin-tab" onclick="switchTab('roles')" id="rolesTabBtn" style="display:none;">Roles</button>
-        </div>
+      <!-- MAIN CONTENT -->
+      <div class="admin-main">
+        <div id="adminPanel" style="display: none;">
+          <div class="admin-header">
+            <h1>Admin Portal</h1>
+            <div id="profileSection" style="display: flex; align-items: center; gap: 1.5rem;">
+              <!-- Notification Icon -->
+              <div style="position: relative; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px;" title="Notifications">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" fill="#2a4175"/>
+                </svg>
+                <span id="notificationBadge" style="position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; background: #ff5252; border: 2px solid white; border-radius: 50%; display: none; align-items: center; justify-content: center; color: white; font-size: 0.8rem; font-weight: 700;">0</span>
+              </div>
+              <!-- Google Drive Auth Button -->
+              <button id="topGoogleAuthBtn" style="display: flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #4285F4 0%, #1F60D2 100%); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.3s ease;" title="Authenticate Google Drive for image management">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M6 6h12v12H6z" fill="white" opacity="0.2"/>
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
+                </svg>
+                <span id="topGoogleAuthText">Enable Editing</span>
+              </button>
+              <div style="width: 1px; height: 40px; background: rgba(0,0,0,0.1);"></div>
+              <div style="text-align: right;">
+                <div id="userEmail" style="color: #2a4175; font-weight: 600; font-size: 0.9rem;">Loading...</div>
+                <div style="color: #555; font-size: 0.8rem;">Administrator</div>
+              </div>
+              <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #2a4175 0%, #4a6fa5 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem;">
+                <span id="profileInitial">A</span>
+              </div>
+            </div>
+          </div>
 
         <!-- PROGRAMS TAB -->
         <div id="programs" class="tab-content active">
@@ -396,18 +868,19 @@
         <!-- GALLERY TAB -->
         <div id="gallery" class="tab-content">
           <div class="upload-section">
-            <h2>Upload Gallery Images to Google Drive</h2>
+            <h2>Gallery Images</h2>
             <div class="success-message" id="gallerySuccessMessage">✓ Image uploaded successfully!</div>
-
+            
             <form class="upload-form" id="uploadForm">
               <div class="form-group">
-                <label for="imageInput">Select Images (PNG, JPG, GIF)</label>
+                <label for="imageInput">Select Images to Upload (PNG, JPG, GIF)</label>
                 <input 
                   type="file" 
                   id="imageInput" 
                   accept="image/*" 
                   multiple
                 />
+                <small style="color: #999; display: block; margin-top: 0.5rem;">Max file size: 5MB per image. Images will be automatically compressed for storage.</small>
               </div>
               <button type="submit" class="primary-btn" id="uploadBtn">Upload Images</button>
               <div id="uploadProgress" style="display: none; margin-top: 1rem; color: var(--text-muted);">
@@ -417,7 +890,7 @@
 
             <div class="image-count" id="imageCount">Loading images...</div>
 
-            <h3 style="margin-top: 2rem; color: var(--brand-blue);">Images in Google Drive Folder</h3>
+            <h3 style="margin-top: 2rem; color: var(--brand-blue);">Images in Gallery</h3>
             <div class="gallery-preview" id="galleryPreview"></div>
           </div>
         </div>
@@ -432,6 +905,35 @@
             <div id="teamList" class="programs-list">
               <p style="grid-column: 1/-1; color: var(--text-muted);">Loading team members...</p>
             </div>
+          </div>
+        </div>
+
+        <!-- JOB OPENINGS TAB -->
+        <div id="jobs" class="tab-content">
+          <div class="upload-section">
+            <h2>Job Openings Management</h2>
+            <button class="primary-btn" onclick="openAddJobModal()" style="margin-bottom: 2rem;">+ Post New Job</button>
+            <div class="success-message" id="jobSuccessMessage"></div>
+            <div class="error-message" id="jobErrorMessage"></div>
+            <div id="jobsList" class="programs-list">
+              <p style="grid-column: 1/-1; color: var(--text-muted);">Loading job openings...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- APPLICATIONS TAB -->
+        <div id="applications" class="tab-content">
+          <div class="upload-section">
+            <h2>Applications</h2>
+            
+            <!-- Job Applications Section -->
+            <div style="margin-bottom: 1.5rem;">
+              <label for="filterJobSelect" style="margin-right: 1rem;">Filter by Job:</label>
+              <select id="filterJobSelect" onchange="loadApplicationsForJob()" style="padding: 0.5rem; border-radius: 6px; border: 1px solid #ddd;">
+                <option value="">All Jobs</option>
+              </select>
+            </div>
+            <div id="applicationsContainer"></div>
           </div>
         </div>
 
@@ -457,6 +959,19 @@
             <div class="error-message" id="marketplaceErrorMessage"></div>
             <div id="marketplaceItemsList" class="programs-list">
               <p style="grid-column: 1/-1; color: var(--text-muted);">Loading marketplace items...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- TESTIMONIALS TAB -->
+        <div id="testimonials" class="tab-content">
+          <div class="upload-section">
+            <h2>Testimonials Management</h2>
+            <button class="primary-btn" onclick="openAddTestimonialModal()" style="margin-bottom: 2rem;">+ Add New Testimonial</button>
+            <div class="success-message" id="testimonialSuccessMessage"></div>
+            <div class="error-message" id="testimonialErrorMessage"></div>
+            <div id="testimonialsList" class="programs-list">
+              <p style="grid-column: 1/-1; color: var(--text-muted);">Loading testimonials...</p>
             </div>
           </div>
         </div>
@@ -595,57 +1110,11 @@
         </div>
       </div>
 
-      <div id="loginPrompt" style="text-align: center; padding: 2rem;">
-        <h2 style="color: var(--brand-blue); margin-bottom: 1rem;">Admin Sign In</h2>
-        <p style="color: var(--text-muted); margin-bottom: 2rem;">Use your admin email and password</p>
-        <div style="max-width:420px;margin:0 auto;text-align:left;background:var(--card-bg);padding:1.5rem;border-radius:12px;border:1px solid var(--border);">
-          <div class="form-group">
-            <label for="loginEmail">Email</label>
-            <input type="email" id="loginEmail" placeholder="admin@example.com">
-          </div>
-          <div class="form-group">
-            <label for="loginPassword">Password</label>
-            <input type="password" id="loginPassword" placeholder="••••••••">
-          </div>
-          <div class="button-group">
-            <button class="primary-btn" onclick="signInEmailPassword()">Sign In</button>
-          </div>
-          <div id="loginErrorMessage" class="error-message" style="margin-top:1rem;"></div>
-          <p style="color:var(--text-muted);margin-top:1rem;">Note: Gallery uploads to Google Drive require Google OAuth. Without Google sign-in, that feature will be disabled.</p>
-        </div>
+      <div id="loginPrompt" style="display: flex; height: 100vh; width: 100%; margin: 0; padding: 0; background: #0d3d56; display: none;">
       </div>
-    </div>
-  </div>
 
   <!-- ADD/EDIT PROGRAM MODAL -->
   <div id="programModal" class="modal">
-      <!-- ADD/EDIT TEAM MEMBER MODAL -->
-      <div id="teamModal" class="modal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2 id="teamModalTitle">Add New Team Member</h2>
-            <button class="close-btn" onclick="closeTeamModal()">×</button>
-          </div>
-          <form id="teamForm">
-            <div class="form-group">
-              <label for="teamName">Name *</label>
-              <input type="text" id="teamName" required>
-            </div>
-            <div class="form-group">
-              <label for="teamRole">Role *</label>
-              <input type="text" id="teamRole" required>
-            </div>
-            <div class="form-group">
-              <label for="teamImage">Image *</label>
-              <input type="file" id="teamImage" accept="image/*" required>
-            </div>
-            <div class="button-group">
-              <button type="submit" class="primary-btn">Save Member</button>
-              <button type="button" class="secondary-btn" onclick="closeTeamModal()">Cancel</button>
-            </div>
-          </form>
-        </div>
-      </div>
     <div class="modal-content">
       <div class="modal-header">
         <h2 id="modalTitle">Add New Program</h2>
@@ -703,6 +1172,110 @@
     </div>
   </div>
 
+  <!-- ADD/EDIT TEAM MEMBER MODAL -->
+  <div id="teamModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="teamModalTitle">Add New Team Member</h2>
+        <button class="close-btn" onclick="closeTeamModal()">×</button>
+      </div>
+      <form id="teamForm">
+        <div class="form-group">
+          <label for="teamName">Name *</label>
+          <input type="text" id="teamName" required>
+        </div>
+        <div class="form-group">
+          <label for="teamRole">Role *</label>
+          <input type="text" id="teamRole" required>
+        </div>
+        <div class="form-group">
+          <label for="teamSection">Section *</label>
+          <select id="teamSection" required>
+            <option value="">-- Select Section --</option>
+            <option value="founder">Founder</option>
+            <option value="executive">Executive Team</option>
+            <option value="staff">Staff</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="teamBio">Bio</label>
+          <textarea id="teamBio" placeholder="Enter team member bio..."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="teamImageUrl">Image URL</label>
+          <input type="url" id="teamImageUrl" placeholder="https://example.com/image.jpg">
+        </div>
+        <div class="form-group">
+          <label for="teamImage">Or Upload Image</label>
+          <input type="file" id="teamImage" accept="image/*">
+        </div>
+        <div id="teamProgressContainer" style="display: none; margin-bottom: 1rem;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.9rem; color: var(--text-muted);">Uploading image...</span>
+            <span id="teamProgressPercent" style="font-size: 0.9rem; color: var(--brand-blue); font-weight: 600;">0%</span>
+          </div>
+          <div style="width: 100%; height: 8px; background-color: var(--bg-secondary); border-radius: 4px; overflow: hidden;">
+            <div id="teamProgressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--brand-blue), var(--brand-orange)); transition: width 0.3s ease; border-radius: 4px;"></div>
+          </div>
+        </div>
+        <div class="button-group">
+          <button type="submit" id="teamSaveBtn" class="primary-btn">Save Member</button>
+          <button type="button" class="secondary-btn" onclick="closeTeamModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADD/EDIT JOB OPENING MODAL -->
+  <div id="jobModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="jobModalTitle">Post New Job Opening</h2>
+        <button class="close-btn" onclick="closeJobModal()">×</button>
+      </div>
+      <form id="jobForm">
+        <div class="form-group">
+          <label for="jobTitle">Job Title *</label>
+          <input type="text" id="jobTitle" required placeholder="e.g., Special Education Teacher">
+        </div>
+        <div class="form-group">
+          <label for="jobLocation">Location </label>
+          <input type="text" id="jobLocation"  placeholder="e.g., Philadelphia, PA">
+        </div>
+        <div class="form-group">
+          <label for="jobType">Job Type </label>
+          <select id="jobType" >
+            <option value="">Select job type</option>
+            <option value="Full-time">Full-time</option>
+            <option value="Part-time">Part-time</option>
+            <option value="Contract">Contract</option>
+            <option value="Internship">Internship</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="jobSalary">Salary Range (optional)</label>
+          <input type="text" id="jobSalary" placeholder="e.g., $45,000 - $60,000">
+        </div>
+        <div class="form-group">
+          <label for="jobDescription">Job Description </label>
+          <textarea id="jobDescription"  style="min-height:200px" placeholder="Describe the role, responsibilities, and qualifications"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="jobRequirements">Requirements </label>
+          <textarea id="jobRequirements"  placeholder="Enter requirements (one per line)"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="jobBenefits">Benefits (optional)</label>
+          <textarea id="jobBenefits" placeholder="Enter benefits (one per line)"></textarea>
+        </div>
+        <div class="button-group">
+          <button type="submit" class="primary-btn">Post Job</button>
+          <button type="button" class="secondary-btn" onclick="closeJobModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- ADD/EDIT BLOG MODAL -->
   <div id="blogModal" class="modal">
     <div class="modal-content">
@@ -714,6 +1287,15 @@
         <div class="form-group">
           <label for="postTitle">Title *</label>
           <input type="text" id="postTitle" required>
+        </div>
+        <div class="form-group">
+          <label for="postType">Type *</label>
+          <select id="postType" required>
+            <option value="">Select type...</option>
+            <option value="Blog">Blog</option>
+            <option value="News">News</option>
+            <option value="Event">Event</option>
+          </select>
         </div>
         <div class="form-group">
           <label for="postExcerpt">Excerpt *</label>
@@ -731,8 +1313,17 @@
           <label for="postImageFile">Or Upload Image</label>
           <input type="file" id="postImageFile" accept="image/*">
         </div>
+        <div id="blogProgressContainer" style="display: none; margin-bottom: 1rem;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.9rem; color: var(--text-muted);">Uploading image...</span>
+            <span id="blogProgressPercent" style="font-size: 0.9rem; color: var(--brand-blue); font-weight: 600;">0%</span>
+          </div>
+          <div style="width: 100%; height: 8px; background-color: var(--bg-secondary); border-radius: 4px; overflow: hidden;">
+            <div id="blogProgressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--brand-blue), var(--brand-orange)); transition: width 0.3s ease; border-radius: 4px;"></div>
+          </div>
+        </div>
         <div class="button-group">
-          <button type="submit" class="primary-btn">Publish</button>
+          <button type="submit" id="blogPublishBtn" class="primary-btn">Publish</button>
           <button type="button" class="secondary-btn" onclick="closeBlogModal()">Cancel</button>
         </div>
       </form>
@@ -790,6 +1381,34 @@
         <div class="button-group">
           <button type="submit" class="primary-btn">Save Item</button>
           <button type="button" class="secondary-btn" onclick="closeMarketplaceModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TESTIMONIALS MODAL -->
+  <div id="testimonialModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="testimonialModalTitle">Add Testimonial</h2>
+        <button class="close-btn" onclick="closeTestimonialModal()">×</button>
+      </div>
+      <form id="testimonialForm">
+        <div class="form-group">
+          <label for="testimonialText">Testimonial Text *</label>
+          <textarea id="testimonialText" required placeholder="Enter the testimonial quote" style="min-height:100px"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="testimonialName">Name *</label>
+          <input type="text" id="testimonialName" required placeholder="e.g., John Doe">
+        </div>
+        <div class="form-group">
+          <label for="testimonialDesignation">Designation *</label>
+          <input type="text" id="testimonialDesignation" required placeholder="e.g., CEO, Example Company">
+        </div>
+        <div class="button-group">
+          <button type="submit" class="primary-btn">Save Testimonial</button>
+          <button type="button" class="secondary-btn" onclick="closeTestimonialModal()">Cancel</button>
         </div>
       </form>
     </div>
@@ -867,9 +1486,23 @@
     function showAdminPanel() {
       document.getElementById('loginPrompt').style.display = 'none';
       document.getElementById('adminPanel').style.display = 'block';
-      const authDiv = document.getElementById('authContainer');
-      const emailText = currentUserEmail ? `Logged in as ${currentUserEmail}` : 'Logged in';
-      authDiv.innerHTML = `<span style="margin-right:1rem;color:var(--text-muted);">${emailText}</span><button class="logout-btn" onclick="logout()">Logout</button>`;
+      document.getElementById('adminSidebar').style.display = 'flex';
+      
+      // Update profile section
+      if (currentUserEmail) {
+        document.getElementById('userEmail').textContent = currentUserEmail;
+        const initial = currentUserEmail.charAt(0).toUpperCase();
+        document.getElementById('profileInitial').textContent = initial;
+      }
+
+      // Set Programs as active by default
+      const programsItem = document.querySelector('.sidebar-item[onclick="switchTab(\'programs\')"]');
+      if (programsItem) {
+        programsItem.classList.add('active');
+      }
+
+      // Auto-load gallery images
+      setTimeout(() => loadGalleryImages(), 300);
 
       localStorage.setItem('adminAuthToken', accessToken);
     }
@@ -878,7 +1511,10 @@
       accessToken = null;
       localStorage.removeItem('adminAuthToken');
       localStorage.removeItem('adminUserEmail');
-      firebase.auth().signOut().finally(() => location.reload());
+      firebase.auth().signOut().finally(() => {
+        // Redirect to homepage
+        window.location.href = '/';
+      });
     }
 
     function parseJwt(token) {
@@ -918,7 +1554,7 @@
 
         applyTabPermissions();
         if (isSuperadmin) {
-          document.getElementById('rolesTabBtn').style.display = '';
+          document.getElementById('rolesNavItem').style.display = '';
           loadRoles();
         }
       } catch (e) {
@@ -927,7 +1563,7 @@
         if (currentUserEmail) {
           isSuperadmin = true;
           applyTabPermissions();
-          document.getElementById('rolesTabBtn').style.display = '';
+          document.getElementById('rolesNavItem').style.display = '';
           // loadRoles may fail under rules; UI will still allow saving roles
         }
       }
@@ -1090,17 +1726,36 @@
     function switchTab(tabName) {
       document.querySelectorAll('.admin-tab').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
 
       event.target.classList.add('active');
       document.getElementById(tabName).classList.add('active');
+      
+      // Add active state to sidebar item
+      const sidebarItems = document.querySelectorAll('.sidebar-item');
+      sidebarItems.forEach(item => {
+        if (item.getAttribute('onclick') === `switchTab('${tabName}')`) {
+          item.classList.add('active');
+        }
+      });
+
+      // Load specific tab content
+      if (tabName === 'applications') {
+        loadApplicationsTab();
+      } else if (tabName === 'gallery') {
+        loadGalleryImages();
+      }
     }
 
     // PROGRAMS MANAGEMENT
     async function loadPrograms() {
       try {
         const snap = await window.firebaseDB.collection('programs').get();
-        programs = snap.docs.map(doc => doc.data());
-        if (!programs || programs.length === 0) programs = getDefaultPrograms();
+        if (snap.empty) {
+          programs = getDefaultPrograms();
+        } else {
+          programs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
       } catch (error) {
         console.error('Error loading programs:', error);
         programs = getDefaultPrograms();
@@ -1111,121 +1766,99 @@
     function getDefaultPrograms() {
       return [
         {
-          id: 'early-intervention',
-          name: 'Early Intervention Services & Behavioral Health',
-          ageRange: 'Ages 3-5',
-          description: 'EIEI offers free to low-cost on-site special education social playgroups and classrooms tailored for children ages 3-5, supported by Certified Educators, Special Needs Instructors, Registered Behavior Technicians (RBT), and Occupational and Speech Therapy support.',
-          provides: [
-            'Free to low-cost specialized classrooms',
-            'Social playgroups with structured learning activities',
-            'Individual and small group behavioral support',
-            'Speech and language therapy',
-            'Occupational therapy services',
-            'In-home and in-school support',
-            'Family engagement and parent coaching'
-          ],
+          id: 'career-development',
+          name: 'Career Development Program',
+          description: 'Join our team! We are NOW HIRING full time with benefits. Join our Early Intervention Dream Team as a Certified Early Childhood and Special Needs Educator, Registered Behavior Technician (RBT), Occupational or Speech Language Therapist.',
+          fullDescription: 'The Education Institute for Early Intervention is seeking passionate professionals to empower the minds and nurture the hearts of children ages 3-5 at our Northeast Philadelphia (19124) Special Education Classrooms. Together, we will provide a safe, nurturing, and developmentally appropriate environment for children and their families to thrive, both in school and in life-long success!',
+          imageUrl: 'images/career-dev.svg',
+          link: '/career-development.html',
           benefits: [
-            'Children with developmental delays',
-            'Children with autism spectrum disorder',
-            'Children with behavioral challenges',
-            'Children needing speech/language support',
-            'Children with special healthcare needs',
-            'Families seeking early support'
-          ],
-          location: '4704 Leiper Street, Philadelphia, PA 19124',
-          imageUrl: 'images/service1.svg'
+            'Full-time positions',
+            'Comprehensive benefits package',
+            'Work with passionate team',
+            'Support diverse learners'
+          ]
         },
         {
           id: 'training-development',
           name: 'Training, Coaching, and Professional Development',
-          description: 'Empowering owners, directors, and educators to expand their knowledge of special education and its legal aspects.',
-          provides: [
-            'Special education law and regulations',
+          description: 'Empowering owners, directors, and educators to expand their knowledge of special education and its legal aspects concerning the children and families they passionately serve.',
+          fullDescription: 'We provide comprehensive professional development for educators, program directors, and administrators. Our training covers special education law, inclusive practices, behavior management, and effective strategies for engaging with children of diverse abilities.',
+          imageUrl: 'images/training.svg',
+          link: 'training-development.html',
+          benefits: [
+            'Special education law and regulations training',
             'Inclusive classroom practices',
             'Behavior management strategies',
-            'Early childhood development',
-            'Trauma-informed approaches',
-            'Family engagement strategies',
-            'Cultural competency and diversity'
-          ],
-          benefits: [
-            'Child care providers',
-            'Preschool programs',
-            'School districts',
-            'Early intervention agencies'
-          ],
-          imageUrl: 'images/service2.svg'
+            'Professional certification support',
+            'Customized workshops for organizations'
+          ]
         },
         {
           id: 'community-programs',
-          name: 'Community Programs & Partnerships',
-          description: 'EIEI has proudly been awarded a 5-year grant in partnership with Pennsylvania\'s Pre-K Counts.',
-          provides: [
-            'Direct consultation and technical assistance',
-            'Staff training and professional development',
-            'Inclusive classroom implementation',
-            'Family engagement program development',
-            'Quality improvement initiatives'
-          ],
+          name: 'Community Programs and Partnerships',
+          description: 'We go further together! EIEI has proudly been awarded a 5-year grant in partnership with Pennsylvania\'s Pre-K Counts, supporting 20+ Early Childhood Education programs.',
+          fullDescription: 'Through our partnership with Pennsylvania\'s Pre-K Counts initiative, we support 20 remarkable Early Childhood Education (ECE) programs with training, coaching, professional development, classroom management, family engagement strategies, and support for the growth of children with diverse abilities.',
+          imageUrl: 'images/community.svg',
+          link: 'community-programs.html',
           benefits: [
-            '20+ ECE programs',
-            'Hundreds of children served',
-            'Statewide reach'
-          ],
-          imageUrl: 'images/service3.svg'
+            'Consultation and technical assistance',
+            'Staff training and development',
+            'Inclusive classroom implementation',
+            'Family engagement programs',
+            'Quality improvement initiatives',
+            'Serves 20+ ECE programs'
+          ]
         },
         {
           id: 'family-empowerment',
-          name: 'Family Empowerment & Support',
-          description: 'Join our vibrant online community and Family Empowerment Corner Sessions where families and educators come together.',
-          provides: [
+          name: 'Family Empowerment',
+          description: 'Join our vibrant online community and Family Empowerment Corner Sessions where families and educators come together to support one another.',
+          fullDescription: 'We provide a supportive community for families navigating early intervention and special education services. From tips on self-care to guidance on navigating city and state special education services, our Family Empowerment programs offer connection, resources, and shared experiences.',
+          imageUrl: 'images/family.svg',
+          link: 'family-empowerment.html',
+          benefits: [
             'Virtual support groups and community meetings',
             'Parenting workshops and training',
             'Self-care and wellness resources',
             'Navigation of special education services',
-            'Advocacy training and support'
-          ],
-          benefits: [
-            'Parents and caregivers',
-            'Families with young children',
-            'Families seeking support',
-            'Those new to special education'
-          ],
-          imageUrl: 'images/service4.svg'
+            'Peer support and shared experiences',
+            'Expert guidance and advocacy training'
+          ]
         },
         {
-          id: 'partnerships',
-          name: 'Supporting Communities & Partnerships',
-          description: 'We join hands with non-profit and for-profit partners, aligning our efforts to support their mission.',
-          provides: [
+          id: 'early-intervention',
+          name: 'Early Intervention Services and Behavioral Health',
+          description: 'EIEI offers free to low-cost on-site special education social playgroups and classrooms tailored for children ages 3-5, supported by Certified Educators and specialists.',
+          fullDescription: 'We provide comprehensive early intervention services for children ages 3-5 with diverse abilities. Our agency offers on-site special education social playgroups and classrooms, as well as comprehensive in-school and in-home services, ensuring that your child receives the best care and support they deserve.',
+          imageUrl: 'images/early-intervention.svg',
+          link: 'early-intervention.html',
+          location: '4704 Leiper Street, Philadelphia, PA 19124',
+          benefits: [
+            'Certified Early Ed & Special Needs Teachers',
+            'Registered Behavior Technicians (RBT)',
+            'Speech & Language Therapy Support',
+            'Occupational Therapy Support',
+            'In-home services',
+            'In-school services',
+            'Social playgroups and classrooms'
+          ]
+        },
+        {
+          id: 'supporting-inclusions',
+          name: 'Supporting Inclusions Through Programs and Affiliates',
+          description: 'We join hands with non-profit and for-profit partners, aligning our efforts to support their mission through essential resources, empowering education, and collaborative efforts.',
+          fullDescription: 'EIEI partners with community organizations to foster inclusivity and support children with diverse abilities. We provide consultation, resources, and collaborative support to non-profit and for-profit organizations committed to serving families in our community.',
+          imageUrl: 'images/partnerships.svg',
+          link: 'supporting-inclusions.html',
+          benefits: [
             'Strategic partnership development',
-            'Grant writing and funding support',
-            'Program evaluation and quality improvement',
-            'Staff training and capacity building'
-          ],
-          benefits: [
-            'Non-profit organizations',
-            'For-profit child care centers',
-            'School districts'
-          ],
-          imageUrl: 'images/service5.svg'
-        },
-        {
-          id: 'cacfp',
-          name: 'CACFP Sponsorship & Administrative Support',
-          description: 'As a sponsoring organization of the Child and Adult Care Food Program (CACFP), EIEI offers vital administrative support.',
-          provides: [
-            'Program sponsorship and administration',
-            'Meal reimbursement processing',
-            'Nutrition education and resources',
-            'Compliance monitoring and support'
-          ],
-          benefits: [
-            'Child care providers',
-            'Preschool programs',
-            'Community organizations'
-          ],
-          imageUrl: 'images/service6.svg'
+            'Financial resources and grants',
+            'Staff training and capacity building',
+            'Program evaluation and improvement',
+            'Collaborative community initiatives',
+            'Advocacy and support'
+          ]
         }
       ];
     }
@@ -1396,68 +2029,176 @@
       setTimeout(() => msg.classList.remove('show'), 3000);
     }
 
-    // GALLERY MANAGEMENT
     const uploadForm = document.getElementById('uploadForm');
     const imageInput = document.getElementById('imageInput');
     const uploadBtn = document.getElementById('uploadBtn');
+    
+    // ImgBB API key for image uploads
+    const IMGBB_API_KEY = 'd8375f7a4f39dad8848b662126a8cfff';
 
     uploadForm.addEventListener('submit', (e) => {
       e.preventDefault();
       uploadFiles();
     });
 
+    async function uploadToImgBB(file) {
+      const formData = new FormData();
+      
+      // Only compress if file size exceeds 30MB
+      const maxCompressionThreshold = 30 * 1024 * 1024;
+      let uploadFile = file;
+      
+      if (file.size > maxCompressionThreshold) {
+        console.log('File size (' + Math.round(file.size / 1024 / 1024) + 'MB) exceeds 30MB, compressing...');
+        uploadFile = await compressImage(file);
+      }
+      
+      formData.append('image', uploadFile);
+      formData.append('key', IMGBB_API_KEY);
+      
+      const response = await fetch('https://api.imgbb.com/1/upload', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!response.ok) {
+        throw new Error('ImgBB upload failed: ' + response.statusText);
+      }
+      
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error('ImgBB error: ' + (data.error?.message || 'Unknown error'));
+      }
+      
+      return data.data.url;
+    }
+    
+    async function compressImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            
+            // Scale down if either dimension exceeds 1200px
+            if (width > 1200 || height > 1200) {
+              const ratio = Math.min(1200 / width, 1200 / height);
+              width = Math.round(width * ratio);
+              height = Math.round(height * ratio);
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Convert to blob with progressive quality reduction
+            let quality = 0.8;
+            const attemptCompress = () => {
+              canvas.toBlob(
+                (blob) => {
+                  if (blob && blob.size > maxCompressionThreshold && quality > 0.1) {
+                    quality -= 0.1;
+                    attemptCompress();
+                  } else if (blob) {
+                    console.log('Compressed from ' + Math.round(file.size / 1024 / 1024) + 'MB to ' + Math.round(blob.size / 1024 / 1024) + 'MB');
+                    resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+                  } else {
+                    reject(new Error('Failed to compress image'));
+                  }
+                },
+                'image/jpeg',
+                quality
+              );
+            };
+            attemptCompress();
+          };
+          img.onerror = () => reject(new Error('Failed to load image'));
+          img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+      });
+    }
+
     function uploadFiles() {
       const files = Array.from(imageInput.files);
       if (files.length === 0) return;
+      
+      // Restrict to maximum 5 files per upload
+      if (files.length > 5) {
+        alert('Maximum 5 images can be uploaded at once. You selected ' + files.length + ' images.');
+        uploadBtn.disabled = false;
+        return;
+      }
 
+      console.log('Starting upload of', files.length, 'image files to ImgBB');
+      
       uploadBtn.disabled = true;
+      const progressDiv = document.getElementById('uploadProgress');
+      progressDiv.style.display = 'block';
 
       let uploaded = 0;
       files.forEach((file) => {
-        const formData = new FormData();
-        const metadata = {
-          name: file.name,
-          mimeType: file.type,
-          parents: [GALLERY_FOLDER_ID]
-        };
-        formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-        formData.append('file', file);
+        // Validate file is an image
+        if (!file.type.startsWith('image/')) {
+          alert('Please select only image files');
+          uploadBtn.disabled = false;
+          progressDiv.style.display = 'none';
+          return;
+        }
 
-        fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-          method: 'POST',
-          headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
-          body: formData
-        })
-        .then(response => response.json())
-        .then(async uploadedFile => {
-          // Get the shareable Google Drive link
-          const driveLink = `https://drive.google.com/uc?export=view&id=${uploadedFile.id}`;
-          
-          // Save to Firestore
+        // Validate original file size (max 32MB for ImgBB)
+        const maxSize = 32 * 1024 * 1024;
+        if (file.size > maxSize) {
+          alert('Image file is too large. Maximum size is 32MB. File: ' + file.name);
+          uploadBtn.disabled = false;
+          progressDiv.style.display = 'none';
+          return;
+        }
+
+        console.log('Processing file:', file.name, 'Size:', file.size);
+        
+        (async () => {
           try {
+            // Upload to ImgBB
+            const imageUrl = await uploadToImgBB(file);
+            console.log('Image uploaded to ImgBB:', file.name, 'URL:', imageUrl);
+            
+            // Save to Firestore gallery collection with ImgBB URL
             await window.firebaseDB.collection('gallery').add({
-              imageUrl: driveLink,
-              title: file.name,
-              driveFileId: uploadedFile.id,
+              imageUrl: imageUrl,
+              fileName: file.name,
               uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
+            
+            console.log('Image saved to Firestore:', file.name);
+            
+            uploaded++;
+            const progress = Math.round((uploaded / files.length) * 100);
+            const progressTextEl = document.getElementById('progressText');
+            if (progressTextEl) progressTextEl.textContent = progress;
+            
+            if (uploaded === files.length) {
+              imageInput.value = '';
+              uploadBtn.disabled = false;
+              progressDiv.style.display = 'none';
+              showGallerySuccessMessage();
+              setTimeout(() => loadGalleryImages(), 1500);
+            }
           } catch (error) {
-            console.error('Error saving to Firestore:', error);
+            console.error('Error uploading file:', error);
+            alert('Error uploading file: ' + file.name + ' - ' + error.message);
+            uploaded++;
+            if (uploaded === files.length) {
+              uploadBtn.disabled = false;
+              progressDiv.style.display = 'none';
+            }
           }
-          
-          uploaded++;
-          if (uploaded === files.length) {
-            imageInput.value = '';
-            uploadBtn.disabled = false;
-            showGallerySuccessMessage();
-            setTimeout(() => loadGalleryImages(), 1500);
-          }
-        })
-        .catch(error => {
-          console.error('Upload error:', error);
-          alert('Error uploading file: ' + file.name);
-          uploadBtn.disabled = false;
-        });
+        })();
       });
     }
 
@@ -1470,37 +2211,91 @@
     function loadGalleryImages() {
       const imageCount = document.getElementById('imageCount');
       const gallery = document.getElementById('galleryPreview');
+      
+      if (!imageCount || !gallery) {
+        console.log('Gallery elements not found, skipping load');
+        return;
+      }
+      
       imageCount.textContent = 'Loading images...';
       gallery.innerHTML = '';
       
-      window.firebaseDB.collection('gallery').orderBy('uploadedAt', 'desc').get()
+      // Check if Firebase is ready
+      if (!window.firebaseDB) {
+        console.error('Firebase DB not available');
+        imageCount.textContent = 'Firebase not initialized';
+        loadLocalGalleryPreview();
+        return;
+      }
+      
+      // Load images from Firestore gallery collection
+      window.firebaseDB.collection('gallery').get()
         .then(snapshot => {
+          console.log('Loaded', snapshot.size, 'images from Firestore');
           if (snapshot.size === 0) {
             imageCount.textContent = 'No images uploaded yet';
+            loadLocalGalleryPreview();
             return;
           }
-
-          const files = [];
-          snapshot.forEach(doc => {
-            files.push({ id: doc.id, ...doc.data() });
+          
+          gallery.innerHTML = '';
+          
+          // Sort by uploadedAt in memory instead of using orderBy (which requires composite index)
+          const docs = snapshot.docs.sort((a, b) => {
+            const timeA = a.data().uploadedAt?.toDate?.() || new Date(0);
+            const timeB = b.data().uploadedAt?.toDate?.() || new Date(0);
+            return timeB - timeA;
           });
-
-          files.forEach(file => {
+          
+          docs.forEach(doc => {
+            const data = doc.data();
+            // Check for new base64 format first, then fallback to old Google Drive URL
+            let imageUrl = data.imageData;
+            
+            if (!imageUrl && data.imageUrl) {
+              // Old format with Google Drive URL - still display but marked for migration
+              imageUrl = data.imageUrl;
+            }
+            
+            if (!imageUrl) {
+              imageUrl = 'images/training-gallery-1.jpg';
+            }
+            
             const div = document.createElement('div');
             div.className = 'preview-item';
+            const deleteButtonHTML = `<button class="delete-btn" onclick="deleteImage('${doc.id}')">×</button>`;
             div.innerHTML = `
-              <img src="${file.imageUrl}" alt="${file.title}">
-              <button class="delete-btn" onclick="deleteImage('${file.id}')">×</button>
+              <img src="${imageUrl}" alt="${data.fileName}" style="max-width: 150px; max-height: 150px; object-fit: cover; border-radius: 4px;" onerror="this.src='images/training-gallery-1.jpg'">
+              ${deleteButtonHTML}
             `;
             gallery.appendChild(div);
           });
-
-          imageCount.textContent = `${files.length} image${files.length !== 1 ? 's' : ''} in gallery`;
+          
+          const countText = `${snapshot.size} image${snapshot.size !== 1 ? 's' : ''} in gallery`;
+          imageCount.textContent = countText;
         })
         .catch(error => {
-          console.error('Error loading images:', error);
-          imageCount.textContent = 'Error loading images.';
+          console.error('Error loading gallery from Firestore:', error);
+          imageCount.textContent = 'Error loading images: ' + error.message;
+          loadLocalGalleryPreview();
         });
+      
+      function loadLocalGalleryPreview() {
+        const localGalleryImages = [
+          'images/training-gallery-1.jpg',
+          'images/training-gallery-2.jpg',
+          'images/training-gallery-3.jpg',
+          'images/training-gallery-4.jpg'
+        ];
+        gallery.innerHTML = '';
+        localGalleryImages.forEach(imagePath => {
+          const div = document.createElement('div');
+          div.className = 'preview-item';
+          div.innerHTML = `<img src="${imagePath}" alt="Gallery image">`;
+          gallery.appendChild(div);
+        });
+        imageCount.textContent = `${localGalleryImages.length} local gallery images (upload new images to replace)`;
+      }
     }
 
     function deleteImage(docId) {
@@ -1516,32 +2311,136 @@
       }
     }
 
+    // Auto-refresh gallery images every 10 seconds for live editing
+    setInterval(() => {
+      const galleryPreview = document.getElementById('galleryPreview');
+      // Only refresh if gallery preview is visible (user is editing)
+      if (galleryPreview && galleryPreview.offsetParent !== null) {
+        loadGalleryImages();
+      }
+    }, 10000);
+
     // Helper: Upload a file to Google Drive and return file info
     async function uploadToDrive(file, parentFolderId) {
-      if (!accessToken) throw new Error('No OAuth access token');
+      // Use googleDriveAccessToken if available (for blog, team, marketplace, gallery)
+      // Otherwise use accessToken (fallback)
+      const token = googleDriveAccessToken || accessToken;
+      if (!token) throw new Error('No OAuth access token. Please authenticate with Google Drive first.');
       if (!parentFolderId || parentFolderId.includes('GOES_HERE')) throw new Error('Set the Drive folder ID');
+      
       const formData = new FormData();
       const metadata = { name: file.name, mimeType: file.type, parents: [parentFolderId] };
       formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
       formData.append('file', file);
+      
       const uploadRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
         method: 'POST',
-        headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
+        headers: new Headers({ 'Authorization': 'Bearer ' + token }),
         body: formData
       });
-      if (!uploadRes.ok) throw new Error('Drive upload failed');
+      if (!uploadRes.ok) {
+        const errorData = await uploadRes.json().catch(() => ({}));
+        console.error('Drive upload error:', errorData);
+        throw new Error('Drive upload failed: ' + (errorData.error?.message || uploadRes.statusText));
+      }
       const uploaded = await uploadRes.json();
+      
+      // Get file info and make it publicly accessible
       const infoRes = await fetch(`https://www.googleapis.com/drive/v3/files/${uploaded.id}?fields=id,name,webViewLink,webContentLink,thumbnailLink`, {
-        headers: new Headers({ 'Authorization': 'Bearer ' + accessToken })
+        headers: new Headers({ 'Authorization': 'Bearer ' + token })
       });
       const info = await infoRes.json();
+      
+      // Make file publicly readable
+      try {
+        await fetch(`https://www.googleapis.com/drive/v3/files/${uploaded.id}/permissions`, {
+          method: 'POST',
+          headers: new Headers({
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          }),
+          body: JSON.stringify({ role: 'reader', type: 'anyone' })
+        });
+      } catch (err) {
+        console.warn('Failed to set public permissions:', err);
+      }
+      
       return info; // { id, name, webViewLink, webContentLink, thumbnailLink }
+    }
+
+    // Upload to Drive with progress callback
+    async function uploadToDriveWithProgress(file, parentFolderId, onProgress) {
+      const token = googleDriveAccessToken || accessToken;
+      if (!token) throw new Error('No OAuth access token. Please authenticate with Google Drive first.');
+      if (!parentFolderId || parentFolderId.includes('GOES_HERE')) throw new Error('Set the Drive folder ID');
+      
+      const formData = new FormData();
+      const metadata = { name: file.name, mimeType: file.type, parents: [parentFolderId] };
+      formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+      formData.append('file', file);
+      
+      // Simulate progress while uploading
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        if (progress < 90) {
+          progress += Math.random() * 30;
+          if (progress > 90) progress = 90;
+          onProgress(Math.floor(progress));
+        }
+      }, 200);
+      
+      try {
+        const uploadRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+          method: 'POST',
+          headers: new Headers({ 'Authorization': 'Bearer ' + token }),
+          body: formData
+        });
+        
+        clearInterval(progressInterval);
+        onProgress(95);
+        
+        if (!uploadRes.ok) {
+          const errorData = await uploadRes.json().catch(() => ({}));
+          console.error('Drive upload error:', errorData);
+          throw new Error('Drive upload failed: ' + (errorData.error?.message || uploadRes.statusText));
+        }
+        const uploaded = await uploadRes.json();
+        
+        // Get file info and make it publicly accessible
+        const infoRes = await fetch(`https://www.googleapis.com/drive/v3/files/${uploaded.id}?fields=id,name,webViewLink,webContentLink,thumbnailLink`, {
+          headers: new Headers({ 'Authorization': 'Bearer ' + token })
+        });
+        const info = await infoRes.json();
+        
+        onProgress(99);
+        
+        // Make file publicly readable
+        try {
+          await fetch(`https://www.googleapis.com/drive/v3/files/${uploaded.id}/permissions`, {
+            method: 'POST',
+            headers: new Headers({
+              'Authorization': 'Bearer ' + token,
+              'Content-Type': 'application/json'
+            }),
+            body: JSON.stringify({ role: 'reader', type: 'anyone' })
+          });
+        } catch (err) {
+          console.warn('Failed to set public permissions:', err);
+        }
+        
+        onProgress(100);
+        return info;
+      } catch (err) {
+        clearInterval(progressInterval);
+        throw err;
+      }
     }
 
     // Initialize when page loads (Email/Password Auth)
     window.addEventListener('load', initializeEmailAuth);
 
     // Initialize Email/Password Auth
+    // Initialize when page loads (Email/Password Auth)
     function initializeEmailAuth() {
       firebase.auth().onAuthStateChanged((user) => {
         if (user) {
@@ -1552,13 +2451,13 @@
           loadPrograms();
           if (accessToken) loadGalleryImages();
         } else {
-          document.getElementById('adminPanel').style.display = 'none';
-          document.getElementById('loginPrompt').style.display = 'block';
+          // Redirect to login page if not authenticated
+          window.location.href = 'login.html';
         }
       });
     }
 
-    // Sign in with email/password
+    window.addEventListener('load', initializeEmailAuth);
     async function signInEmailPassword() {
       const email = String(document.getElementById('loginEmail').value || '').trim().toLowerCase();
       const password = String(document.getElementById('loginPassword').value || '');
@@ -1602,7 +2501,8 @@
         blogPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         renderBlogList();
       } catch (e) {
-        list.innerHTML = '<p style="grid-column:1/-1;color:var(--text-muted);">Error loading posts.</p>';
+        console.error('Error loading blog posts:', e);
+        list.innerHTML = '<p style="grid-column:1/-1;color:var(--text-muted);">Error loading posts: ' + e.message + '</p>';
       }
     }
 
@@ -1619,7 +2519,7 @@
         const img = p.imageUrl || 'images/service1.svg';
         const excerpt = p.excerpt || (p.content ? p.content.slice(0, 120) + '…' : '');
         card.innerHTML = `
-          <img src="${img}" alt="${p.title}" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;margin-bottom:1rem;">
+          <img src="${img}" alt="${p.title}" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;margin-bottom:1rem;" onerror="this.src='images/service1.svg'">
           <h3>${p.title}</h3>
           <p>${excerpt}</p>
           <div class="program-actions">
@@ -1644,6 +2544,7 @@
       editingPostId = id;
       document.getElementById('blogModalTitle').textContent = 'Edit Post';
       document.getElementById('postTitle').value = p.title || '';
+      document.getElementById('postType').value = p.type || 'Blog';
       document.getElementById('postExcerpt').value = p.excerpt || '';
       document.getElementById('postContent').value = p.content || '';
       document.getElementById('postImageUrl').value = p.imageUrl || '';
@@ -1657,36 +2558,86 @@
 
     document.getElementById('blogForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const publishBtn = document.getElementById('blogPublishBtn');
+      const progressContainer = document.getElementById('blogProgressContainer');
+      const progressBar = document.getElementById('blogProgressBar');
+      const progressPercent = document.getElementById('blogProgressPercent');
+      
       const title = document.getElementById('postTitle').value.trim();
+      const type = document.getElementById('postType').value.trim();
       const excerpt = document.getElementById('postExcerpt').value.trim();
       const content = document.getElementById('postContent').value.trim();
       let imageUrl = document.getElementById('postImageUrl').value.trim() || null;
       const imageFile = document.getElementById('postImageFile').files[0];
-      if (imageFile) {
-        try {
-          const info = await uploadToDrive(imageFile, BLOG_FOLDER_ID);
-          imageUrl = info.thumbnailLink ? info.thumbnailLink.replace('=s220', '=s600') : info.webContentLink;
-        } catch (err) {
-          showBlogError('Image upload failed');
-          return;
-        }
-      }
-      if (!title || !excerpt || !content) {
+      
+      if (!title || !type || !excerpt || !content) {
         showBlogError('Please fill in all required fields.');
         return;
       }
+      
+      if (imageFile) {
+        try {
+          // Validate file size (max 32MB for ImgBB)
+          const maxSize = 32 * 1024 * 1024;
+          if (imageFile.size > maxSize) {
+            showBlogError('Image file is too large. Maximum size is 32MB.');
+            return;
+          }
+          
+          // Validate file type
+          if (!imageFile.type.startsWith('image/')) {
+            showBlogError('Please select a valid image file.');
+            return;
+          }
+          
+          // Show progress bar
+          progressContainer.style.display = 'block';
+          publishBtn.disabled = true;
+          progressBar.style.width = '30%';
+          progressPercent.textContent = '30%';
+          
+          // Upload to ImgBB
+          imageUrl = await uploadToImgBB(imageFile);
+          
+          progressBar.style.width = '60%';
+          progressPercent.textContent = '60%';
+        } catch (err) {
+          console.error('Image upload error:', err);
+          showBlogError('Image upload failed: ' + err.message);
+          progressContainer.style.display = 'none';
+          publishBtn.disabled = false;
+          return;
+        }
+      }
+      
       try {
+        progressBar.style.width = '80%';
+        progressPercent.textContent = '80%';
+        
         if (editingPostId) {
-          await window.firebaseDB.collection('posts').doc(editingPostId).update({ title, excerpt, content, imageUrl });
+          await window.firebaseDB.collection('posts').doc(editingPostId).update({ title, type, excerpt, content, imageUrl });
           showBlogSuccess('Post updated!');
         } else {
-          await window.firebaseDB.collection('posts').add({ title, excerpt, content, imageUrl, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+          await window.firebaseDB.collection('posts').add({ title, type, excerpt, content, imageUrl, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
           showBlogSuccess('Post published!');
         }
+        
+        progressBar.style.width = '100%';
+        progressPercent.textContent = '100%';
+        
         closeBlogModal();
-        loadBlogPosts();
+        setTimeout(() => {
+          progressContainer.style.display = 'none';
+          progressBar.style.width = '0%';
+          progressPercent.textContent = '0%';
+          publishBtn.disabled = false;
+          loadBlogPosts();
+        }, 500);
       } catch (e) {
-        showBlogError('Error saving post.');
+        console.error('Error saving post:', e);
+        showBlogError('Error saving post: ' + (e.message || 'Unknown error'));
+        progressContainer.style.display = 'none';
+        publishBtn.disabled = false;
       }
     });
 
@@ -1730,11 +2681,15 @@
       const teamList = document.getElementById('teamList');
       teamList.innerHTML = '<p style="grid-column: 1/-1; color: var(--text-muted);">Loading team members...</p>';
       try {
+        if (!window.firebaseDB) {
+          throw new Error('Firebase DB not initialized');
+        }
         const snapshot = await window.firebaseDB.collection('team').get();
         teamMembers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderTeamList();
       } catch (e) {
-        teamList.innerHTML = '<p style="grid-column: 1/-1; color: var(--text-muted);">Error loading team members.</p>';
+        console.error('Error loading team members:', e);
+        teamList.innerHTML = '<p style="grid-column: 1/-1; color: var(--text-muted);">Error loading team members: ' + e.message + '</p>';
       }
     }
 
@@ -1748,8 +2703,9 @@
       teamMembers.forEach(member => {
         const card = document.createElement('div');
         card.className = 'program-card';
+        const memberImageUrl = member.imageUrl || 'images/default-avatar.jpg';
         card.innerHTML = `
-          <img src="${member.imageUrl || ''}" alt="${member.name}" style="width:80px;height:80px;object-fit:cover;border-radius:50%;margin-bottom:1rem;">
+          <img src="${memberImageUrl}" alt="${member.name}" style="width:80px;height:80px;object-fit:cover;border-radius:50%;margin-bottom:1rem;" onerror="this.src='images/default-avatar.jpg'">
           <h3>${member.name}</h3>
           <p>${member.role}</p>
           <div class="program-actions">
@@ -1775,6 +2731,9 @@
       document.getElementById('teamModalTitle').textContent = 'Edit Team Member';
       document.getElementById('teamName').value = member.name;
       document.getElementById('teamRole').value = member.role;
+      document.getElementById('teamSection').value = member.section || '';
+      document.getElementById('teamBio').value = member.bio || '';
+      document.getElementById('teamImageUrl').value = member.imageUrl || '';
       document.getElementById('teamImage').value = '';
       document.getElementById('teamModal').classList.add('active');
     }
@@ -1786,34 +2745,85 @@
 
     document.getElementById('teamForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const saveBtn = document.getElementById('teamSaveBtn');
+      const progressContainer = document.getElementById('teamProgressContainer');
+      const progressBar = document.getElementById('teamProgressBar');
+      const progressPercent = document.getElementById('teamProgressPercent');
+      
       const name = document.getElementById('teamName').value.trim();
       const role = document.getElementById('teamRole').value.trim();
+      const section = document.getElementById('teamSection').value.trim();
+      const bio = document.getElementById('teamBio').value.trim();
+      const imageUrl = document.getElementById('teamImageUrl').value.trim();
       const imageFile = document.getElementById('teamImage').files[0];
-      if (!name || !role || (!editingTeamId && !imageFile)) {
-        showTeamError('All fields are required.');
+      
+      if (!name || !role || !section) {
+        showTeamError('Name, Role, and Section are required.');
         return;
       }
+      
       try {
-        let imageUrl = null;
-        if (imageFile) {
-          const info = await uploadToDrive(imageFile, TEAM_FOLDER_ID);
-          imageUrl = info.thumbnailLink ? info.thumbnailLink.replace('=s220', '=s400') : info.webContentLink;
+        let finalImageUrl = imageUrl; // Use URL if provided
+        
+        // If image file is provided and no URL, upload to ImgBB
+        if (imageFile && !imageUrl) {
+          // Validate file size (max 32MB for ImgBB)
+          const maxSize = 32 * 1024 * 1024;
+          if (imageFile.size > maxSize) {
+            showTeamError('Image file is too large. Maximum size is 32MB.');
+            return;
+          }
+          
+          // Validate file type
+          if (!imageFile.type.startsWith('image/')) {
+            showTeamError('Please select a valid image file.');
+            return;
+          }
+          
+          // Show progress bar
+          progressContainer.style.display = 'block';
+          saveBtn.disabled = true;
+          progressBar.style.width = '30%';
+          progressPercent.textContent = '30%';
+          
+          // Upload to ImgBB
+          finalImageUrl = await uploadToImgBB(imageFile);
+          
+          progressBar.style.width = '60%';
+          progressPercent.textContent = '60%';
         }
+        
+        progressBar.style.width = '80%';
+        progressPercent.textContent = '80%';
+        
         if (editingTeamId) {
           // Update
-          const updateData = { name, role };
-          if (imageUrl) updateData.imageUrl = imageUrl;
+          const updateData = { name, role, section, bio };
+          if (finalImageUrl) updateData.imageUrl = finalImageUrl;
           await window.firebaseDB.collection('team').doc(editingTeamId).update(updateData);
           showTeamSuccess('Team member updated!');
         } else {
           // Add
-          await window.firebaseDB.collection('team').add({ name, role, imageUrl });
+          await window.firebaseDB.collection('team').add({ name, role, section, bio, imageUrl: finalImageUrl || null });
           showTeamSuccess('Team member added!');
         }
+        
+        progressBar.style.width = '100%';
+        progressPercent.textContent = '100%';
+        
         closeTeamModal();
-        loadTeamMembers();
+        setTimeout(() => {
+          progressContainer.style.display = 'none';
+          progressBar.style.width = '0%';
+          progressPercent.textContent = '0%';
+          saveBtn.disabled = false;
+          loadTeamMembers();
+        }, 500);
       } catch (e) {
-        showTeamError('Error saving team member.');
+        console.error('Error saving team member:', e);
+        showTeamError('Error saving team member: ' + (e.message || 'Unknown error'));
+        progressContainer.style.display = 'none';
+        saveBtn.disabled = false;
       }
     });
 
@@ -1993,7 +3003,14 @@
         return;
       }
 
-      container.innerHTML = marketplaceItems.map(item => `
+      container.innerHTML = marketplaceItems.map(item => {
+        const editButton = googleDriveAccessToken 
+          ? `<button class="edit-btn" onclick="openEditMarketplaceModal('${item.id}')">Edit</button>`
+          : `<button class="edit-btn" style="opacity: 0.5; cursor: not-allowed;" disabled title="Authenticate Google Drive first">Edit</button>`;
+        const deleteButton = googleDriveAccessToken
+          ? `<button class="delete-btn" onclick="deleteMarketplaceItem('${item.id}')">Delete</button>`
+          : `<button class="delete-btn" style="opacity: 0.5; cursor: not-allowed;" disabled title="Authenticate Google Drive first">Delete</button>`;
+        return `
         <div class="card">
           <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
             <div>
@@ -2003,12 +3020,13 @@
               <p style="color: var(--brand-blue); font-weight: 600; margin: 0.5rem 0 0 0;">Price: $${parseFloat(item.price).toFixed(2)}</p>
             </div>
             <div style="display: flex; gap: 0.5rem;">
-              <button class="edit-btn" onclick="openEditMarketplaceModal('${item.id}')">Edit</button>
-              <button class="delete-btn" onclick="deleteMarketplaceItem('${item.id}')">Delete</button>
+              ${editButton}
+              ${deleteButton}
             </div>
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
     }
 
     function openAddMarketplaceItemModal() {
@@ -2049,36 +3067,49 @@
       let imageUrl = document.getElementById('itemImageUrl').value.trim() || null;
       const imageFile = document.getElementById('itemImageFile').files[0];
 
-      if (imageFile) {
-        try {
-          const info = await uploadToDrive(imageFile, MARKETPLACE_FOLDER_ID);
-          imageUrl = info.thumbnailLink ? info.thumbnailLink.replace('=s220', '=s600') : info.webContentLink;
-        } catch (err) {
-          showMarketplaceError('Image upload failed');
-          return;
-        }
-      }
-
       if (!title || !category || !description || !price || !availability || !contactEmail) {
         showMarketplaceError('Please fill in all required fields.');
         return;
       }
 
+      if (imageFile) {
+        try {
+          // Validate file size (max 32MB for ImgBB)
+          const maxSize = 32 * 1024 * 1024;
+          if (imageFile.size > maxSize) {
+            showMarketplaceError('Image file is too large. Maximum size is 32MB.');
+            return;
+          }
+          
+          // Validate file type
+          if (!imageFile.type.startsWith('image/')) {
+            showMarketplaceError('Please select a valid image file.');
+            return;
+          }
+          
+          // Upload to ImgBB
+          imageUrl = await uploadToImgBB(imageFile);
+        } catch (err) {
+          showMarketplaceError('Image upload failed: ' + err.message);
+          return;
+        }
+      }
+
       try {
         const data = { title, category, description, price, availability, contactEmail, imageUrl };
         if (editingMarketplaceId) {
-          await db.collection('marketplace').doc(editingMarketplaceId).update(data);
+          await window.firebaseDB.collection('marketplace').doc(editingMarketplaceId).update(data);
           showMarketplaceSuccess('Item updated!');
         } else {
           data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-          await db.collection('marketplace').add(data);
+          await window.firebaseDB.collection('marketplace').add(data);
           showMarketplaceSuccess('Item added!');
         }
         closeMarketplaceModal();
         loadMarketplaceItems();
       } catch (e) {
         console.error('Error saving item:', e);
-        showMarketplaceError('Error saving item.');
+        showMarketplaceError('Error saving item: ' + (e.message || 'Unknown error'));
       }
     });
 
@@ -2270,7 +3301,748 @@
     switchTab = function(tabName) {
       switchTabOrig5(tabName);
       if (tabName === 'contacts') loadContacts();
+      if (tabName === 'testimonials') loadTestimonials();
     }
+
+    // ================
+    // TESTIMONIALS MANAGEMENT
+    // ================
+    let testimonials = [];
+    let editingTestimonialId = null;
+
+    function openAddTestimonialModal() {
+      editingTestimonialId = null;
+      document.getElementById('testimonialForm').reset();
+      document.getElementById('testimonialModalTitle').textContent = 'Add Testimonial';
+      document.getElementById('testimonialModal').style.display = 'block';
+    }
+
+    function closeTestimonialModal() {
+      document.getElementById('testimonialModal').style.display = 'none';
+    }
+
+    function loadTestimonials() {
+      window.firebaseDB.collection('testimonials').orderBy('createdAt', 'desc').get()
+        .then(snapshot => {
+          testimonials = [];
+          snapshot.forEach(doc => {
+            testimonials.push({ id: doc.id, ...doc.data() });
+          });
+          displayTestimonials();
+        })
+        .catch(err => {
+          console.error('Error loading testimonials:', err);
+          document.getElementById('testimonialsList').innerHTML = '<p style="grid-column:1/-1;color:var(--text-muted);">Error loading testimonials</p>';
+        });
+    }
+
+    function displayTestimonials() {
+      const container = document.getElementById('testimonialsList');
+      container.innerHTML = '';
+      
+      if (!testimonials.length) {
+        container.innerHTML = '<p style="grid-column:1/-1;color:var(--text-muted);">No testimonials yet</p>';
+        return;
+      }
+
+      testimonials.forEach(t => {
+        const card = document.createElement('div');
+        card.className = 'item-card';
+        card.style.cssText = 'padding:1.5rem;background:var(--card-bg);border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);';
+        card.innerHTML = `
+          <p style="font-style:italic;margin-bottom:1rem;color:var(--text);">"${escapeHtml(t.text || '')}"</p>
+          <p style="margin-bottom:0.5rem;color:var(--brand-orange);font-weight:600;">- ${escapeHtml(t.name || '')}</p>
+          <p style="margin-bottom:1rem;color:var(--text-muted);font-size:0.9rem;">${escapeHtml(t.designation || '')}</p>
+          <div class="button-group" style="display:flex;gap:0.5rem;">
+            <button class="secondary-btn" onclick="editTestimonial('${t.id}')" style="flex:1;">Edit</button>
+            <button class="secondary-btn" onclick="deleteTestimonial('${t.id}')" style="flex:1;background:var(--playful-pink);color:white;">Delete</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function editTestimonial(id) {
+      const t = testimonials.find(x => x.id === id);
+      if (!t) return;
+      
+      editingTestimonialId = id;
+      document.getElementById('testimonialText').value = t.text || '';
+      document.getElementById('testimonialName').value = t.name || '';
+      document.getElementById('testimonialDesignation').value = t.designation || '';
+      document.getElementById('testimonialModalTitle').textContent = 'Edit Testimonial';
+      document.getElementById('testimonialModal').style.display = 'block';
+    }
+
+    function deleteTestimonial(id) {
+      if (!confirm('Delete this testimonial?')) return;
+      
+      window.firebaseDB.collection('testimonials').doc(id).delete()
+        .then(() => {
+          showSuccessMessage('testimonialSuccessMessage', 'Testimonial deleted successfully');
+          loadTestimonials();
+        })
+        .catch(err => showErrorMessage('testimonialErrorMessage', 'Error deleting testimonial: ' + err.message));
+    }
+
+    // Handle testimonial form submission
+    document.getElementById('testimonialForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const text = document.getElementById('testimonialText').value.trim();
+      const name = document.getElementById('testimonialName').value.trim();
+      const designation = document.getElementById('testimonialDesignation').value.trim();
+      
+      if (!text || !name || !designation) {
+        showErrorMessage('testimonialErrorMessage', 'All fields are required');
+        return;
+      }
+
+      const data = {
+        text,
+        name,
+        designation,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      try {
+        if (editingTestimonialId) {
+          await window.firebaseDB.collection('testimonials').doc(editingTestimonialId).update(data);
+          showSuccessMessage('testimonialSuccessMessage', 'Testimonial updated successfully');
+        } else {
+          data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+          await window.firebaseDB.collection('testimonials').add(data);
+          showSuccessMessage('testimonialSuccessMessage', 'Testimonial added successfully');
+        }
+        closeTestimonialModal();
+        loadTestimonials();
+      } catch (err) {
+        showErrorMessage('testimonialErrorMessage', 'Error saving testimonial: ' + err.message);
+      }
+    });
+
+    // Set today's date in the calendar header
+    function setTodayDate() {
+      const todayElement = document.getElementById('todayDate');
+      if (todayElement) {
+        const today = new Date();
+        const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+        const todayString = today.toLocaleDateString('en-US', options);
+        todayElement.innerHTML = `<strong>${todayString}</strong>`;
+      }
+    }
+
+    // Initialize today's date when page loads
+    window.addEventListener('load', setTodayDate);
+    setTodayDate(); // Also call immediately in case load event already fired
+
+    // ===== NOTIFICATION BADGE HANDLER =====
+    let notificationListenerActive = false;
+    let conversationMessageListeners = {};
+
+    function countUnreadMessages() {
+      return new Promise((resolve) => {
+        const db = window.firebaseDB;
+        if (!db) {
+          resolve(0);
+          return;
+        }
+
+        let totalUnread = 0;
+        let processedConversations = 0;
+
+        db.collection('chats').get().then((chatsSnapshot) => {
+          if (chatsSnapshot.empty) {
+            resolve(0);
+            return;
+          }
+
+          chatsSnapshot.docs.forEach((chatDoc) => {
+            const chatId = chatDoc.id;
+
+            db.collection('chats')
+              .doc(chatId)
+              .collection('messages')
+              .where('sender', '==', 'user')
+              .where('read', '==', false)
+              .get()
+              .then((messagesSnapshot) => {
+                totalUnread += messagesSnapshot.size;
+                processedConversations++;
+
+                if (processedConversations === chatsSnapshot.docs.length) {
+                  resolve(totalUnread);
+                }
+              });
+          });
+        });
+      });
+    }
+
+    async function updateNotificationBadge() {
+      const badgeElement = document.getElementById('notificationBadge');
+      if (!badgeElement) return;
+
+      const count = await countUnreadMessages();
+      if (count > 0) {
+        badgeElement.textContent = count;
+        badgeElement.style.display = 'flex';
+        console.log('Badge updated to:', count);
+      } else {
+        badgeElement.style.display = 'none';
+        console.log('Badge hidden');
+      }
+    }
+
+    function setupMessageListener(conversationId) {
+      if (conversationMessageListeners[conversationId]) return;
+
+      const db = window.firebaseDB;
+      if (!db) return;
+
+      conversationMessageListeners[conversationId] = true;
+
+      // Listen to messages in this conversation and update badge when any message changes
+      db.collection('chats')
+        .doc(conversationId)
+        .collection('messages')
+        .onSnapshot(() => {
+          updateNotificationBadge();
+        });
+    }
+
+    function initializeNotificationListener() {
+      if (notificationListenerActive) return;
+      
+      const db = window.firebaseDB;
+      if (!db) {
+        console.log('Firebase not ready, retrying in 1s...');
+        setTimeout(initializeNotificationListener, 1000);
+        return;
+      }
+
+      notificationListenerActive = true;
+      console.log('Setting up notification listener...');
+
+      // Listen to conversations and set up message listeners
+      db.collection('chats').onSnapshot((chatsSnapshot) => {
+        chatsSnapshot.docs.forEach((chatDoc) => {
+          setupMessageListener(chatDoc.id);
+        });
+        // Initial count
+        updateNotificationBadge();
+      });
+    }
+
+    // Start notification listener
+    window.addEventListener('load', initializeNotificationListener);
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      initializeNotificationListener();
+    }
+
+    // JOB OPENINGS MANAGEMENT
+    let editingJobId = null;
+    let jobOpenings = [];
+
+    function openAddJobModal() {
+      editingJobId = null;
+      document.getElementById('jobModalTitle').textContent = 'Post New Job Opening';
+      document.getElementById('jobForm').reset();
+      document.getElementById('jobModal').classList.add('active');
+    }
+
+    function closeJobModal() {
+      document.getElementById('jobModal').classList.remove('active');
+      editingJobId = null;
+    }
+
+    document.getElementById('jobForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const jobData = {
+        title: document.getElementById('jobTitle').value,
+        location: document.getElementById('jobLocation').value,
+        type: document.getElementById('jobType').value,
+        salary: document.getElementById('jobSalary').value || '',
+        description: document.getElementById('jobDescription').value,
+        requirements: document.getElementById('jobRequirements').value.split('\n').filter(r => r.trim()),
+        benefits: document.getElementById('jobBenefits').value.split('\n').filter(b => b.trim()),
+        postedAt: new Date().toISOString(),
+        status: 'active'
+      };
+
+      try {
+        if (editingJobId) {
+          await window.firebaseDB.collection('jobs').doc(editingJobId).update(jobData);
+          document.getElementById('jobSuccessMessage').textContent = '✓ Job opening updated successfully!';
+          document.getElementById('jobSuccessMessage').style.display = 'block';
+        } else {
+          await window.firebaseDB.collection('jobs').add(jobData);
+          document.getElementById('jobSuccessMessage').textContent = '✓ Job opening posted successfully!';
+          document.getElementById('jobSuccessMessage').style.display = 'block';
+        }
+        closeJobModal();
+        loadJobOpenings();
+        setTimeout(() => {
+          document.getElementById('jobSuccessMessage').style.display = 'none';
+        }, 3000);
+      } catch (error) {
+        document.getElementById('jobErrorMessage').textContent = '✗ Error: ' + error.message;
+        document.getElementById('jobErrorMessage').style.display = 'block';
+      }
+    });
+
+    async function loadJobOpenings() {
+      try {
+        const snap = await window.firebaseDB.collection('jobs').orderBy('postedAt', 'desc').get();
+        jobOpenings = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderJobsList();
+      } catch (error) {
+        console.error('Error loading jobs:', error);
+      }
+    }
+
+    function renderJobsList() {
+      const container = document.getElementById('jobsList');
+      if (jobOpenings.length === 0) {
+        container.innerHTML = '<p style="grid-column: 1/-1; color: var(--text-muted);">No job openings posted yet.</p>';
+        return;
+      }
+
+      container.innerHTML = jobOpenings.map(job => `
+        <div class="program-card">
+          <div class="program-card-header" style="background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);">
+            <h3>${job.title}</h3>
+            <span style="font-size: 0.9rem; opacity: 0.9;">${job.type} • ${job.location}</span>
+          </div>
+          <div class="program-card-body">
+            <p class="program-description">${job.description.substring(0, 150)}...</p>
+            ${job.salary ? `<p style="color: #2a4175; font-weight: 600; margin-bottom: 0.5rem;">💰 ${job.salary}</p>` : ''}
+            <div class="program-benefits">
+              <h4>Requirements:</h4>
+              <ul>
+                ${job.requirements.slice(0, 3).map(req => `<li>${req}</li>`).join('')}
+              </ul>
+            </div>
+            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+              <button class="edit-btn" onclick="editJob('${job.id}')">Edit</button>
+              <button class="delete-btn" onclick="deleteJob('${job.id}')" style="background: #ff6b6b; flex: 1;">Delete</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function editJob(id) {
+      const job = jobOpenings.find(j => j.id === id);
+      if (!job) return;
+      editingJobId = id;
+      document.getElementById('jobModalTitle').textContent = 'Edit Job Opening';
+      document.getElementById('jobTitle').value = job.title;
+      document.getElementById('jobLocation').value = job.location;
+      document.getElementById('jobType').value = job.type;
+      document.getElementById('jobSalary').value = job.salary || '';
+      document.getElementById('jobDescription').value = job.description;
+      document.getElementById('jobRequirements').value = job.requirements.join('\n');
+      document.getElementById('jobBenefits').value = job.benefits.join('\n');
+      document.getElementById('jobModal').classList.add('active');
+    }
+
+    async function deleteJob(id) {
+      if (confirm('Are you sure you want to delete this job opening?')) {
+        try {
+          await window.firebaseDB.collection('jobs').doc(id).delete();
+          document.getElementById('jobSuccessMessage').textContent = '✓ Job opening deleted!';
+          document.getElementById('jobSuccessMessage').style.display = 'block';
+          loadJobOpenings();
+          setTimeout(() => {
+            document.getElementById('jobSuccessMessage').style.display = 'none';
+          }, 3000);
+        } catch (error) {
+          document.getElementById('jobErrorMessage').textContent = '✗ Error: ' + error.message;
+          document.getElementById('jobErrorMessage').style.display = 'block';
+        }
+      }
+    }
+
+    // ====== APPLICATION FUNCTIONS ======
+
+    async function loadApplicationsTab() {
+      try {
+        // Populate job filter dropdown
+        const jobsSnapshot = await window.firebaseDB.collection('jobs').orderBy('postedAt', 'desc').get();
+        const filterSelect = document.getElementById('filterJobSelect');
+        
+        jobsSnapshot.forEach(doc => {
+          const job = doc.data();
+          const option = document.createElement('option');
+          option.value = doc.id;
+          option.textContent = job.title;
+          filterSelect.appendChild(option);
+        });
+
+        // Load all applications
+        await loadApplicationsForJob();
+      } catch (error) {
+        console.error('Error loading applications tab:', error);
+      }
+    }
+
+    async function loadApplicationsForJob() {
+      try {
+        const selectedJobId = document.getElementById('filterJobSelect').value;
+        const applicationsContainer = document.getElementById('applicationsContainer');
+        
+        // Load all applications (no composite index needed)
+        const applicationsSnapshot = await window.firebaseDB.collection('job_applications').get();
+
+        // Filter client-side
+        let filteredApps = applicationsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        if (selectedJobId) {
+          filteredApps = filteredApps.filter(app => app.jobId === selectedJobId);
+        }
+
+        // Sort by appliedAt descending
+        filteredApps.sort((a, b) => {
+          const dateA = a.appliedAt.toDate ? a.appliedAt.toDate() : new Date(a.appliedAt);
+          const dateB = b.appliedAt.toDate ? b.appliedAt.toDate() : new Date(b.appliedAt);
+          return dateB - dateA;
+        });
+
+        if (filteredApps.length === 0) {
+          applicationsContainer.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 2rem;">No applications found.</p>';
+          return;
+        }
+
+        applicationsContainer.innerHTML = '';
+        
+        // Group applications by job
+        const jobsMap = {};
+        
+        filteredApps.forEach(app => {
+          const jobId = app.jobId;
+          
+          if (!jobsMap[jobId]) {
+            jobsMap[jobId] = {
+              jobTitle: '',
+              applications: []
+            };
+          }
+          
+          jobsMap[jobId].applications.push(app);
+        });
+
+        // Fetch job titles
+        for (const jobId of Object.keys(jobsMap)) {
+          try {
+            const jobDoc = await window.firebaseDB.collection('jobs').doc(jobId).get();
+            if (jobDoc.exists) {
+              jobsMap[jobId].jobTitle = jobDoc.data().title;
+            }
+          } catch (error) {
+            console.error('Error fetching job:', error);
+          }
+        }
+
+        // Render tables for each job
+        for (const [jobId, data] of Object.entries(jobsMap)) {
+          const tableContainer = document.createElement('div');
+          tableContainer.style.marginBottom = '3rem';
+          
+          let tableHTML = `
+            <h3 style="color: var(--brand-blue); margin-bottom: 1rem;">${data.jobTitle} (${data.applications.length} applications)</h3>
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <thead>
+                  <tr style="background: var(--brand-blue); color: white;">
+                    <th style="padding: 1rem; text-align: left;">Name</th>
+                    <th style="padding: 1rem; text-align: left;">Email</th>
+                    <th style="padding: 1rem; text-align: left;">Phone</th>
+                    <th style="padding: 1rem; text-align: left;">Experience</th>
+                    <th style="padding: 1rem; text-align: left;">Resume</th>
+                    <th style="padding: 1rem; text-align: left;">Applied At</th>
+                    <th style="padding: 1rem; text-align: center;">Status</th>
+                    <th style="padding: 1rem; text-align: center;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+          `;
+
+          data.applications.forEach((app, index) => {
+            const appliedDate = new Date(app.appliedAt.toDate()).toLocaleDateString();
+            const rowBg = index % 2 === 0 ? '#f9f9f9' : 'white';
+            const statusColor = app.status === 'pending' ? '#ff9800' : app.status === 'reviewed' ? '#4caf50' : '#f44336';
+            const resumeBtn = (app.resumeData || app.resumeUrl) ? `<button onclick="downloadJobResume('${app.id}', '${app.resumeFileName || 'resume.pdf'}')" style="background: #28a745; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer;">📥 Download</button>` : 'N/A';
+            
+            tableHTML += `
+              <tr style="background: ${rowBg}; border-bottom: 1px solid #eee;">
+                <td style="padding: 1rem;">${app.name}</td>
+                <td style="padding: 1rem;"><a href="mailto:${app.email}" style="color: var(--brand-blue); text-decoration: none;">${app.email}</a></td>
+                <td style="padding: 1rem;"><a href="tel:${app.phone}" style="color: var(--brand-blue); text-decoration: none;">${app.phone}</a></td>
+                <td style="padding: 1rem;">${app.experience} years</td>
+                <td style="padding: 1rem;">${resumeBtn}</td>
+                <td style="padding: 1rem;">${appliedDate}</td>
+                <td style="padding: 1rem; text-align: center;">
+                  <select onchange="updateApplicationStatus('${app.id}', this.value)" style="padding: 0.5rem; border-radius: 4px; border: 1px solid #ddd; background: ${statusColor}; color: white; cursor: pointer;">
+                    <option value="pending" ${app.status === 'pending' ? 'selected' : ''}>Pending</option>
+                    <option value="reviewed" ${app.status === 'reviewed' ? 'selected' : ''}>Reviewed</option>
+                    <option value="rejected" ${app.status === 'rejected' ? 'selected' : ''}>Rejected</option>
+                  </select>
+                </td>
+                <td style="padding: 1rem; text-align: center;">
+                  <button onclick="deleteApplication('${app.id}')" style="background: #f44336; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer;">Delete</button>
+                </td>
+              </tr>
+            `;
+          });
+
+          tableHTML += `
+                </tbody>
+              </table>
+            </div>
+          `;
+
+          tableContainer.innerHTML = tableHTML;
+          applicationsContainer.appendChild(tableContainer);
+        }
+      } catch (error) {
+        console.error('Error loading applications:', error);
+        document.getElementById('applicationsContainer').innerHTML = '<p style="color: red;">Error loading applications.</p>';
+      }
+    }
+
+    async function updateApplicationStatus(appId, newStatus) {
+      try {
+        await window.firebaseDB.collection('job_applications').doc(appId).update({
+          status: newStatus
+        });
+      } catch (error) {
+        console.error('Error updating application status:', error);
+        alert('Error updating status: ' + error.message);
+      }
+    }
+
+    async function deleteApplication(appId) {
+      if (confirm('Are you sure you want to delete this application?')) {
+        try {
+          await window.firebaseDB.collection('job_applications').doc(appId).delete();
+          loadApplicationsForJob();
+        } catch (error) {
+          console.error('Error deleting application:', error);
+          alert('Error deleting application: ' + error.message);
+        }
+      }
+    }
+
+    // ==================
+    // CAREER APPLICATIONS (from career-opportunities.html form)
+    // ==================
+    
+
+
+    async function loadCareerApplications() {
+      try {
+        const positionFilter = document.getElementById('filterPositionSelect').value;
+        const statusFilter = document.getElementById('filterStatusSelect').value;
+        
+        const snapshot = await window.firebaseDB.collection('careerApplications')
+          .orderBy('submittedAt', 'desc')
+          .get();
+
+        let apps = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        // Populate position filter if empty
+        if (document.getElementById('filterPositionSelect').children.length === 1) {
+          const positions = new Set(apps.map(a => a.position));
+          positions.forEach(pos => {
+            const option = document.createElement('option');
+            option.value = pos;
+            option.textContent = pos;
+            document.getElementById('filterPositionSelect').appendChild(option);
+          });
+        }
+
+        // Apply filters
+        if (positionFilter) {
+          apps = apps.filter(a => a.position === positionFilter);
+        }
+        if (statusFilter) {
+          apps = apps.filter(a => a.status === statusFilter);
+        }
+
+        const container = document.getElementById('careerApplicationsContainer');
+        
+        if (apps.length === 0) {
+          container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 2rem;">No applications found.</p>';
+          return;
+        }
+
+        container.innerHTML = apps.map(app => {
+          const date = app.submittedAt ? new Date(app.submittedAt.toDate()).toLocaleDateString() : 'N/A';
+          const resumeBtn = app.resumeData ? `<button onclick="downloadCareerResume('${app.id}', '${app.resumeFileName}')" style="background: #28a745; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-right: 0.5rem;">📥 Resume</button>` : '';
+          
+          return `
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid var(--brand-blue);">
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                  <div style="font-size: 0.85rem; color: #999; font-weight: 600; margin-bottom: 0.3rem;">Name</div>
+                  <div style="font-weight: 600;">${app.name}</div>
+                </div>
+                <div>
+                  <div style="font-size: 0.85rem; color: #999; font-weight: 600; margin-bottom: 0.3rem;">Position</div>
+                  <div style="font-weight: 600;">${app.position}</div>
+                </div>
+                <div>
+                  <div style="font-size: 0.85rem; color: #999; font-weight: 600; margin-bottom: 0.3rem;">Email</div>
+                  <div><a href="mailto:${app.email}" style="color: var(--brand-blue); text-decoration: none;">${app.email}</a></div>
+                </div>
+                <div>
+                  <div style="font-size: 0.85rem; color: #999; font-weight: 600; margin-bottom: 0.3rem;">Phone</div>
+                  <div><a href="tel:${app.phone}" style="color: var(--brand-blue); text-decoration: none;">${app.phone}</a></div>
+                </div>
+              </div>
+              
+              ${app.coverLetter ? `<div style="background: #f5f5f5; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+                <div style="font-size: 0.85rem; color: #999; font-weight: 600; margin-bottom: 0.5rem;">Message:</div>
+                <div style="white-space: pre-wrap; line-height: 1.6;">${app.coverLetter}</div>
+              </div>` : ''}
+              
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                ${resumeBtn}
+                <button onclick="viewCareerApplicationDetails('${app.id}')" style="background: var(--brand-blue); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-right: 0.5rem;">👁️ View</button>
+                <select onchange="updateCareerApplicationStatus('${app.id}', this.value)" style="padding: 0.4rem 0.8rem; border-radius: 4px; border: 1px solid #ddd; font-size: 0.85rem;">
+                  <option value="${app.status}" selected>${app.status}</option>
+                  <option value="pending">Pending</option>
+                  <option value="reviewed">Reviewed</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+              
+              <div style="color: #999; font-size: 0.85rem; margin-top: 1rem;">Submitted: ${date}</div>
+            </div>
+          `;
+        }).join('');
+      } catch (error) {
+        console.error('Error loading career applications:', error);
+        document.getElementById('careerApplicationsContainer').innerHTML = '<p style="color: red;">Error loading applications.</p>';
+      }
+    }
+
+    function downloadCareerResume(appId, filename) {
+      window.firebaseDB.collection('careerApplications').doc(appId).get().then(doc => {
+        const data = doc.data();
+        if (!data || !data.resumeData) {
+          alert('Resume not found');
+          return;
+        }
+        
+        try {
+          // Check if it's a base64 data URL
+          if (data.resumeData.startsWith('data:')) {
+            const link = document.createElement('a');
+            link.href = data.resumeData;
+            link.download = filename || 'resume.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          } else {
+            // Fallback for direct URLs
+            window.open(data.resumeData, '_blank');
+          }
+        } catch (err) {
+          console.error('Error processing resume:', err);
+          alert('Error downloading resume');
+        }
+      }).catch(error => {
+        console.error('Error downloading resume:', error);
+        alert('Error downloading resume: ' + error.message);
+      });
+    }
+    
+    function downloadJobResume(appId, filename) {
+      window.firebaseDB.collection('job_applications').doc(appId).get().then(doc => {
+        const data = doc.data();
+        if (!data) {
+          alert('Application not found');
+          return;
+        }
+        
+        // Try base64 data first, then fall back to URL
+        const resumeData = data.resumeData || data.resumeUrl;
+        if (!resumeData) {
+          alert('Resume not found for this application');
+          return;
+        }
+        
+        try {
+          // Check if it's a base64 data URL
+          if (resumeData.startsWith('data:')) {
+            const link = document.createElement('a');
+            link.href = resumeData;
+            link.download = filename || 'resume.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          } else {
+            // Fallback for direct URLs
+            window.open(resumeData, '_blank');
+          }
+        } catch (err) {
+          console.error('Error processing resume:', err);
+          alert('Error downloading resume');
+        }
+      }).catch(error => {
+        console.error('Error downloading resume:', error);
+        alert('Error downloading resume: ' + error.message);
+      });
+    }
+
+    function viewCareerApplicationDetails(appId) {
+      window.firebaseDB.collection('careerApplications').doc(appId).get().then(doc => {
+        const app = doc.data();
+        if (!app) return;
+        
+        const date = app.submittedAt ? new Date(app.submittedAt.toDate()).toLocaleString() : 'N/A';
+        alert(`
+Name: ${app.name}
+Email: ${app.email}
+Phone: ${app.phone}
+Position: ${app.position}
+Location: ${app.location}
+Status: ${app.status}
+Submitted: ${date}
+
+Message:
+${app.coverLetter || 'N/A'}
+
+Resume: ${app.resumeFileName || 'Not uploaded'}
+        `);
+      });
+    }
+
+    async function updateCareerApplicationStatus(appId, newStatus) {
+      if (newStatus === '') return;
+      try {
+        await window.firebaseDB.collection('careerApplications').doc(appId).update({
+          status: newStatus
+        });
+        loadCareerApplications();
+      } catch (error) {
+        console.error('Error updating status:', error);
+        alert('Error updating status');
+      }
+    }
+
+    // Load jobs when page loads
+    window.addEventListener('load', () => {
+      loadJobOpenings();
+    });
   </script>
 
 </body>
